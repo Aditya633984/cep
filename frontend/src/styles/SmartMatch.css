@@ -1,0 +1,382 @@
+/* ============================================================
+   Smart Food Matching – shared component styles
+   Prefix: .sm-*
+   Included in: DonorDashboard.jsx, NgoDashboard.jsx
+   ============================================================ */
+
+/* ─── Trigger button (shown on POSTED donation rows) ────── */
+.sm-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid #A855F7;
+  background: #FAF5FF;
+  color: #7C3AED;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.sm-trigger-btn:hover { background: #7C3AED; color: #fff; }
+
+/* ─── Panel Container ─────────────────────────────────────── */
+.sm-panel {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* ─── Panel Header ────────────────────────────────────────── */
+.sm-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+  color: #fff;
+  flex-wrap: wrap;
+}
+.sm-panel__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+.sm-panel__subtitle { font-size: 0.8rem; opacity: 0.85; margin-top: 0.2rem; }
+.sm-panel__algo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+.sm-panel__header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
+.sm-panel__close {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 0.375rem;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  transition: background 0.15s;
+}
+.sm-panel__close:hover { background: rgba(255,255,255,0.3); }
+
+/* ─── Urgent badge ────────────────────────────────────────── */
+.sm-urgent-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #B91C1C;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  animation: sm-pulse 1.2s ease-in-out infinite;
+}
+@keyframes sm-pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+/* ─── Donation Summary Strip ──────────────────────────────── */
+.sm-donation-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  padding: 0.875rem 1.5rem;
+  background: #F5F3FF;
+  border-bottom: 1px solid #DDD6FE;
+  font-size: 0.8rem;
+  color: #5B21B6;
+}
+.sm-donation-strip span { display: flex; align-items: center; gap: 0.3rem; font-weight: 500; }
+.sm-donation-strip strong { font-weight: 700; }
+
+/* ─── Controls bar ────────────────────────────────────────── */
+.sm-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  background: var(--color-bg-subtle);
+}
+.sm-controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.sm-controls input[type="checkbox"] { accent-color: #7C3AED; width: 14px; height: 14px; }
+.sm-count { margin-left: auto; font-size: 0.75rem; color: var(--color-text-muted); font-weight: 500; }
+
+.sm-refresh-btn {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1.5px solid #7C3AED;
+  background: #FAF5FF;
+  color: #7C3AED;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sm-refresh-btn:hover:not(:disabled) { background: #7C3AED; color: #fff; }
+.sm-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sm-algo-toggle {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1.5px solid #DDD6FE;
+  background: #F5F3FF;
+  color: #6D28D9;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sm-algo-toggle:hover { background: #6D28D9; color: #fff; border-color: #6D28D9; }
+
+/* ─── Algorithm info box ──────────────────────────────────── */
+.sm-algo-info {
+  padding: 1rem 1.5rem;
+  background: #FAF5FF;
+  border-bottom: 1px solid #DDD6FE;
+}
+.sm-algo-info__title { font-size: 0.8rem; font-weight: 700; color: #6D28D9; margin-bottom: 0.4rem; }
+.sm-algo-info__desc { font-size: 0.78rem; color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 0.75rem; }
+.sm-algo-info__weights { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.6rem; }
+.sm-weight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  background: #EDE9FE;
+  color: #6D28D9;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+.sm-weight-chip strong { font-weight: 700; }
+.sm-algo-info__note { font-size: 0.72rem; color: var(--color-text-muted); font-style: italic; margin: 0; }
+.sm-algo-info__urgent {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #B91C1C;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.75rem;
+}
+
+/* ─── Loading / Error ─────────────────────────────────────── */
+.sm-loading { text-align: center; padding: 2.5rem; color: var(--color-text-muted); font-size: 0.875rem; }
+.sm-spinner {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #DDD6FE;
+  border-top-color: #7C3AED;
+  border-radius: 50%;
+  animation: sm-spin 0.7s linear infinite;
+  margin-bottom: 0.75rem;
+}
+@keyframes sm-spin { to { transform: rotate(360deg); } }
+.sm-error {
+  margin: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #DC2626;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.sm-empty { text-align: center; padding: 2.5rem; color: var(--color-text-muted); }
+
+/* ─── Top match callout ───────────────────────────────────── */
+.sm-top-callout {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1.5rem;
+  background: linear-gradient(90deg, #FEF9C3 0%, #FFF7ED 100%);
+  border-bottom: 1px solid #FDE047;
+  flex-wrap: wrap;
+}
+.sm-top-callout__label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #92400E; }
+.sm-top-callout__name { font-size: 0.875rem; font-weight: 700; color: var(--color-text-primary); }
+.sm-top-callout__score { font-size: 0.78rem; font-weight: 600; margin-left: auto; }
+
+/* ─── NGO Match List ──────────────────────────────────────── */
+.sm-list { display: flex; flex-direction: column; gap: 0; }
+
+/* ─── NGO Match Card ──────────────────────────────────────── */
+.sm-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.15s;
+  align-items: flex-start;
+}
+.sm-card--top { background: linear-gradient(180deg, rgba(254,249,195,0.25) 0%, transparent 100%); }
+.sm-card:last-child { border-bottom: none; }
+.sm-card:hover { background: var(--color-bg-subtle); }
+
+/* Rank badge */
+.sm-rank {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  font-weight: 800; font-size: 0.8rem;
+  flex-shrink: 0; border: 2px solid; margin-top: 2px;
+}
+.sm-rank--1 { background: #FEF9C3; color: #854D0E; border-color: #FDE047; }
+.sm-rank--2 { background: #F1F5F9; color: #475569; border-color: #CBD5E1; }
+.sm-rank--3 { background: #FFF7ED; color: #9A3412; border-color: #FDBA74; }
+.sm-rank--n { background: #F5F3FF; color: #7C3AED; border-color: #DDD6FE; }
+
+/* Score ring */
+.sm-score-col { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; flex-shrink: 0; min-width: 90px; }
+.sm-score-ring { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+.sm-score-ring svg { transform: rotate(-90deg); width: 64px; height: 64px; }
+.sm-score-ring__track { fill: none; stroke: #EDE9FE; stroke-width: 5; }
+.sm-score-ring__fill { fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+.sm-score-ring__value {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 1.05rem; font-weight: 800; line-height: 1; color: var(--color-text-primary);
+}
+.sm-score-ring__label { font-size: 0.55rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.sm-tier-badge { font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; border: 1px solid currentColor; text-align: center; white-space: nowrap; }
+
+/* ─── NGO Info Block ──────────────────────────────────────── */
+.sm-card__info { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+.sm-card__name-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.sm-card__name { font-size: 1rem; font-weight: 700; color: var(--color-text-primary); }
+.sm-you-badge {
+  font-size: 0.68rem;
+  background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE;
+  border-radius: 999px; padding: 0.1rem 0.5rem; font-weight: 700;
+}
+.sm-card__badges { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.sm-badge {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.45rem;
+  border-radius: 999px; border: 1px solid;
+}
+.sm-badge--verified { background: #F0FDF4; color: #16A34A; border-color: #BBF7D0; }
+.sm-badge--avail    { background: #F0FDF4; color: #15803D; border-color: #86EFAC; }
+.sm-badge--unavail  { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
+
+/* ─── Meta pills ──────────────────────────────────────────── */
+.sm-card__meta { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.sm-meta-pill {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  font-size: 0.73rem; color: var(--color-text-muted);
+  background: var(--color-bg-subtle); border: 1px solid var(--color-border);
+  border-radius: 999px; padding: 0.15rem 0.55rem; font-weight: 500;
+}
+.sm-meta-pill--urgent { color: #B91C1C; background: #FEF2F2; border-color: #FECACA; font-weight: 700; }
+
+/* ─── Reason callout ──────────────────────────────────────── */
+.sm-reason-callout {
+  display: flex; align-items: flex-start; gap: 0.35rem;
+  background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 0.4rem;
+  padding: 0.4rem 0.7rem; font-size: 0.76rem; color: #6D28D9; font-style: italic; line-height: 1.5;
+}
+.sm-reason-callout__icon { font-style: normal; flex-shrink: 0; }
+
+/* ─── Factor breakdown ────────────────────────────────────── */
+.sm-factors {
+  display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;
+  background: var(--color-bg-subtle); border: 1px solid var(--color-border);
+  border-radius: 0.5rem; padding: 0.75rem;
+}
+.sm-factor-row { display: flex; flex-direction: column; gap: 0.15rem; }
+.sm-factor-row__header {
+  display: grid;
+  grid-template-columns: 18px 102px 1fr auto auto;
+  gap: 0.4rem; align-items: center;
+}
+.sm-factor-icon { font-size: 0.85rem; line-height: 1; }
+.sm-factor-row__label {
+  font-size: 0.67rem; font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase; letter-spacing: 0.03em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sm-factor-bar { height: 6px; background: #EDE9FE; border-radius: 999px; overflow: hidden; }
+.sm-factor-bar__fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+.sm-factor-score { font-size: 0.7rem; font-weight: 800; color: var(--color-text-primary); min-width: 24px; text-align: right; }
+.sm-factor-weight { font-size: 0.62rem; color: var(--color-text-muted); min-width: 44px; text-align: right; font-weight: 500; }
+.sm-factor-reason { padding-left: 120px; font-size: 0.67rem; color: var(--color-text-muted); line-height: 1.4; font-style: italic; }
+
+/* ─── Card actions ────────────────────────────────────────── */
+.sm-card__actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 0.2rem; }
+.sm-expand-btn {
+  background: none; border: none;
+  font-size: 0.73rem; font-weight: 600; color: #7C3AED; cursor: pointer; padding: 0;
+  text-decoration: underline; text-decoration-color: transparent; transition: text-decoration-color 0.15s;
+}
+.sm-expand-btn:hover { text-decoration-color: #7C3AED; }
+.sm-accept-err { font-size: 0.73rem; color: #DC2626; font-weight: 500; }
+
+/* ─── Accept Button ───────────────────────────────────────── */
+.sm-accept-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.45rem 1rem; border-radius: 0.4rem;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer;
+  border: 1.5px solid #16A34A; background: #F0FDF4; color: #16A34A;
+  transition: all 0.15s; white-space: nowrap; align-self: flex-start;
+}
+.sm-accept-btn:hover { background: #16A34A; color: #fff; }
+.sm-accept-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sm-accepted-notice { font-size: 0.75rem; font-weight: 600; color: #16A34A; display: flex; align-items: center; gap: 0.3rem; }
+
+/* ─── Factor color helpers ────────────────────────────────── */
+.sm-bar-excellent { background: #16A34A; }
+.sm-bar-good      { background: #2563EB; }
+.sm-bar-fair      { background: #D97706; }
+.sm-bar-poor      { background: #DC2626; }
+
+/* ─── Footer ──────────────────────────────────────────────── */
+.sm-footer {
+  padding: 0.875rem 1.5rem;
+  background: #FAF5FF;
+  border-top: 1px solid #DDD6FE;
+  font-size: 0.71rem;
+  color: #6D28D9;
+  line-height: 1.6;
+}
+
+/* ─── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .sm-card { grid-template-columns: auto 1fr; }
+  .sm-score-col { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 0.75rem; }
+  .sm-factor-row__header { grid-template-columns: 18px 80px 1fr auto; }
+  .sm-factor-weight { display: none; }
+  .sm-factor-reason { padding-left: 0; }
+}

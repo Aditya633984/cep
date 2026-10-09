@@ -1,0 +1,281 @@
+/* ─── Analytics / Charts styles ─────────────────────────────────────────────── */
+
+.analytics-section {
+  margin-top: 2rem;
+}
+
+.analytics-section__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Two-column chart grid */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Full-width chart row */
+.analytics-grid--full {
+  grid-template-columns: 1fr;
+}
+
+/* Three column when needed */
+.analytics-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 900px) {
+  .analytics-grid,
+  .analytics-grid--3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Chart Card ──────────────────────────────────────────────────────────── */
+.analytics-card {
+  border-radius: 1rem;
+  padding: 1.25rem 1.25rem 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.analytics-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.analytics-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.14);
+}
+
+.analytics-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1.1rem;
+}
+
+.analytics-card__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.analytics-card__subtitle {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+/* ─── Empty Chart ─────────────────────────────────────────────────────────── */
+.analytics-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: var(--color-text-muted, #64748B);
+  text-align: center;
+}
+
+.analytics-empty span {
+  font-size: 2.25rem;
+  opacity: 0.35;
+}
+
+.analytics-empty p {
+  font-size: 0.82rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.analytics-empty small {
+  opacity: 0.6;
+}
+
+/* ─── Impact Stats strip ─────────────────────────────────────────────────── */
+.impact-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+@media (max-width: 900px) {
+  .impact-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .impact-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+.impact-stat {
+  background: var(--color-surface, #1E293B);
+  border: 1px solid var(--color-border, rgba(255,255,255,0.07));
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.impact-stat::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  opacity: 0.07;
+  transform: translate(20px, -20px);
+}
+
+.impact-stat--blue::after   { background: #6366F1; }
+.impact-stat--green::after  { background: #22C55E; }
+.impact-stat--amber::after  { background: #FBBF24; }
+.impact-stat--purple::after { background: #A855F7; }
+.impact-stat--sky::after    { background: #0EA5E9; }
+.impact-stat--teal::after   { background: #14B8A6; }
+.impact-stat--orange::after { background: #F97316; }
+.impact-stat--rose::after   { background: #F43F5E; }
+
+.impact-stat:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.impact-stat__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.impact-stat__icon--blue   { background: rgba(99,102,241,0.15);  }
+.impact-stat__icon--green  { background: rgba(34,197,94,0.15);   }
+.impact-stat__icon--amber  { background: rgba(251,191,36,0.15);  }
+.impact-stat__icon--purple { background: rgba(168,85,247,0.15);  }
+.impact-stat__icon--sky    { background: rgba(14,165,233,0.15);  }
+.impact-stat__icon--rose   { background: rgba(244,63,94,0.15);   }
+.impact-stat__icon--teal   { background: rgba(20,184,166,0.15);  }
+.impact-stat__icon--orange { background: rgba(249,115,22,0.15);  }
+
+.impact-stat__body {
+  min-width: 0;
+}
+
+.impact-stat__value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--color-text, #F1F5F9);
+  line-height: 1.1;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
+
+.impact-stat__label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted, #64748B);
+  margin-top: 0.2rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Admin-specific wider impact strip ─────────────────────────────────── */
+.impact-strip--admin {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .impact-strip--admin {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 960px) {
+  .impact-strip--admin {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .impact-strip--admin {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ─── Analytics Header Banner ────────────────────────────────────────────── */
+.analytics-banner {
+  background: linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(168,85,247,0.1) 100%);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 1rem;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.analytics-banner__title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text, #F1F5F9);
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.01em;
+}
+
+.analytics-banner__sub {
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #94A3B8);
+}
+
+.analytics-banner__icon {
+  font-size: 2.5rem;
+  opacity: 0.7;
+}
+
+/* ─── Analytics Page (light theme dashboard cards) ──────────────────────── */
+.analytics-page-card {
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.analytics-page-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 1.5rem;
+}

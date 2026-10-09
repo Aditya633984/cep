@@ -1,0 +1,371 @@
+/* ============================================================
+   Donor Dashboard – component-specific styles
+   ============================================================ */
+
+/* ─── Loading / Error ─────────────────────────────────────── */
+.dd-loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.dd-error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #DC2626;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ─── Recent Donation Rows ────────────────────────────────── */
+.dd-donation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.dd-donation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid var(--color-border);
+  gap: 1rem;
+}
+
+.dd-donation-row:last-child {
+  border-bottom: none;
+}
+
+.dd-donation-row__left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.dd-donation-row__name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dd-donation-row__meta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.dd-donation-row__date {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* ─── Table ───────────────────────────────────────────────── */
+.dd-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  min-width: 640px;
+}
+
+.dd-table thead th {
+  text-align: left;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.dd-table tbody td {
+  padding: 0.75rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+
+.dd-table tbody tr:hover td {
+  background-color: var(--color-bg-subtle);
+}
+
+.dd-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dd-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: inherit;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.15s;
+}
+
+.dd-link:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+/* ─── Action Buttons ──────────────────────────────────────── */
+.dd-action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.dd-action-btn--view {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary-light);
+}
+.dd-action-btn--view:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.dd-action-btn--edit {
+  background: #FFFBEB;
+  color: #D97706;
+  border-color: #FDE68A;
+}
+.dd-action-btn--edit:hover {
+  background: #F59E0B;
+  color: #fff;
+  border-color: #F59E0B;
+}
+
+.dd-action-btn--cancel {
+  background: #FEF2F2;
+  color: #DC2626;
+  border-color: #FECACA;
+}
+.dd-action-btn--cancel:hover {
+  background: #DC2626;
+  color: #fff;
+  border-color: #DC2626;
+}
+
+/* ─── Detail Grid ─────────────────────────────────────────── */
+.dd-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.5rem;
+}
+
+@media (max-width: 560px) {
+  .dd-detail-grid { grid-template-columns: 1fr; }
+}
+
+.dd-detail-field label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.dd-detail-field p {
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.dd-detail-field.wide {
+  grid-column: 1 / -1;
+}
+
+/* ─── Status Timeline ─────────────────────────────────────── */
+.dd-timeline {
+  display: flex;
+  align-items: flex-start;
+  overflow-x: auto;
+  gap: 0;
+  padding: 0.5rem 0 1rem;
+}
+
+.dd-timeline__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 90px;
+  position: relative;
+}
+
+.dd-timeline__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-border-dark);
+  border: 2px solid var(--color-border-dark);
+  z-index: 1;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.dd-timeline__step.done .dd-timeline__dot {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.dd-timeline__step.active .dd-timeline__dot {
+  width: 18px;
+  height: 18px;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px var(--color-primary-light);
+}
+
+.dd-timeline__label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-top: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.dd-timeline__step.done .dd-timeline__label {
+  color: var(--color-primary);
+}
+
+.dd-timeline__line {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--color-border-dark);
+  z-index: 0;
+}
+
+.dd-timeline__step.done .dd-timeline__line {
+  background: var(--color-primary);
+}
+
+/* ─── Donation Form ───────────────────────────────────────── */
+.dd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dd-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1.5rem;
+}
+
+@media (max-width: 620px) {
+  .dd-form-grid { grid-template-columns: 1fr; }
+  .dd-span-2 { grid-column: 1; }
+}
+
+.dd-span-2 {
+  grid-column: 1 / -1;
+}
+
+.dd-required {
+  color: var(--color-error);
+  margin-left: 2px;
+}
+
+/* Radio group */
+.dd-radio-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.dd-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1.5px solid var(--color-border-dark);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.dd-radio input {
+  display: none;
+}
+
+.dd-radio.checked {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Image upload */
+.dd-image-upload {
+  border: 2px dashed var(--color-border-dark);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.dd-image-upload:hover {
+  border-color: var(--color-primary);
+}
+
+.dd-image-upload__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 2rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+/* ─── Stats – 5 column override ──────────────────────────── */
+@media (max-width: 900px) {
+  .dashboard-stats[style] {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-stats[style] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

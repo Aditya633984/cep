@@ -1,0 +1,542 @@
+/* ============================================================
+   Volunteer Dashboard – component-specific styles
+   Prefix: .vd-*
+   ============================================================ */
+
+/* ─── Loading / Error / Success ───────────────────────────── */
+.vd-loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.vd-error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #DC2626;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.vd-success {
+  background: #FFF7ED;
+  border: 1px solid #FED7AA;
+  color: #EA580C;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ─── Sidebar active override for volunteer orange ─────────── */
+#volunteer-dashboard .dashboard-nav__item.active {
+  background-color: #FFF7ED;
+  color: #EA580C;
+}
+
+/* ─── Stats 4-col grid ──────────────────────────────────────── */
+.vd-stats-4 {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+@media (max-width: 900px) {
+  .vd-stats-4 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 480px) {
+  .vd-stats-4 { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ─── Tab Strip ───────────────────────────────────────────── */
+.vd-tab-strip {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.vd-tab-btn {
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-border-dark);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vd-tab-btn.active,
+.vd-tab-btn:hover {
+  background: #FFF7ED;
+  color: #EA580C;
+  border-color: #EA580C;
+}
+
+/* ─── Pickup Card Grid ────────────────────────────────────── */
+.vd-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1rem;
+}
+
+.vd-pickup-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.875rem;
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+
+.vd-pickup-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.vd-pickup-card__img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  background: var(--color-bg-muted);
+}
+
+.vd-pickup-card__img-placeholder {
+  width: 100%;
+  height: 130px;
+  background: linear-gradient(135deg, #FFF7ED, #FFEDD5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+
+.vd-pickup-card__body {
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.vd-pickup-card__name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.vd-pickup-card__meta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+}
+
+.vd-pickup-card__meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+/* ─── Address Blocks ──────────────────────────────────────── */
+.vd-address-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.vd-address-item {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.vd-address-item__icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.vd-address-item__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.vd-address-item__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.1rem;
+}
+
+.vd-address-item__value {
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.vd-address-item__sub {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.vd-address-arrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  padding-left: 1.7rem;
+}
+
+.vd-address-arrow::before {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 16px;
+  background: var(--color-border-dark);
+}
+
+.vd-pickup-card__footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ─── Action Buttons ──────────────────────────────────────── */
+.vd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.375rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.vd-btn--accept {
+  background: #FFF7ED;
+  color: #EA580C;
+  border-color: #FDBA74;
+}
+.vd-btn--accept:hover {
+  background: #EA580C;
+  color: #fff;
+  border-color: #EA580C;
+}
+
+.vd-btn--pickup {
+  background: #EFF6FF;
+  color: #2563EB;
+  border-color: #BFDBFE;
+}
+.vd-btn--pickup:hover {
+  background: #2563EB;
+  color: #fff;
+  border-color: #2563EB;
+}
+
+.vd-btn--deliver {
+  background: #F0FDF4;
+  color: #16A34A;
+  border-color: #BBF7D0;
+}
+.vd-btn--deliver:hover {
+  background: #16A34A;
+  color: #fff;
+  border-color: #16A34A;
+}
+
+.vd-btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ─── Active Pickup Card (full width) ────────────────────── */
+.vd-active-card {
+  background: var(--color-bg);
+  border: 2px solid #EA580C;
+  border-radius: 0.875rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.vd-active-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.vd-active-card__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.vd-active-card__subtitle {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 0.2rem;
+}
+
+.vd-active-card__addresses {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 560px) {
+  .vd-active-card__addresses { grid-template-columns: 1fr; }
+}
+
+.vd-address-box {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  padding: 0.875rem;
+}
+
+.vd-address-box__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.vd-address-box__text {
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.vd-address-box__sub {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 0.15rem;
+}
+
+.vd-active-card__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ─── Timeline ────────────────────────────────────────────── */
+.vd-timeline {
+  display: flex;
+  align-items: flex-start;
+  overflow-x: auto;
+  gap: 0;
+  padding: 0.5rem 0 1rem;
+}
+
+.vd-timeline__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 80px;
+  position: relative;
+}
+
+.vd-timeline__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-border-dark);
+  border: 2px solid var(--color-border-dark);
+  z-index: 1;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.vd-timeline__step.done .vd-timeline__dot {
+  background: #EA580C;
+  border-color: #EA580C;
+}
+
+.vd-timeline__step.active .vd-timeline__dot {
+  width: 18px;
+  height: 18px;
+  background: #EA580C;
+  border-color: #EA580C;
+  box-shadow: 0 0 0 4px #FFF7ED;
+}
+
+.vd-timeline__label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-top: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.vd-timeline__step.done .vd-timeline__label {
+  color: #EA580C;
+}
+
+.vd-timeline__line {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--color-border-dark);
+  z-index: 0;
+}
+
+.vd-timeline__step.done .vd-timeline__line {
+  background: #EA580C;
+}
+
+/* ─── Completed Table ─────────────────────────────────────── */
+.vd-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.vd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  min-width: 600px;
+}
+
+.vd-table thead th {
+  text-align: left;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.vd-table tbody td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+
+.vd-table tbody tr:hover td {
+  background-color: var(--color-bg-subtle);
+}
+
+.vd-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ─── Profile Form ────────────────────────────────────────── */
+.vd-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1.5rem;
+}
+
+@media (max-width: 620px) {
+  .vd-form-grid { grid-template-columns: 1fr; }
+  .vd-span-2 { grid-column: 1; }
+}
+
+.vd-span-2 { grid-column: 1 / -1; }
+.vd-required { color: var(--color-error); margin-left: 2px; }
+
+/* ─── Filters ──────────────────────────────────────────────── */
+.vd-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 1rem;
+  background: var(--color-bg-subtle);
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  margin-bottom: 1.25rem;
+  align-items: flex-end;
+}
+
+.vd-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 130px;
+}
+
+.vd-filter-group label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.vd-filter-group input,
+.vd-filter-group select {
+  padding: 0.4rem 0.6rem;
+  border: 1.5px solid var(--color-border-dark);
+  border-radius: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--color-text-primary);
+  background: var(--color-bg);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.vd-filter-group input:focus,
+.vd-filter-group select:focus {
+  border-color: #EA580C;
+}
+
+/* ─── Status Badge override for volunteer orange ────────────── */
+.vd-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.vd-status--assigned  { background: #FFF7ED; color: #EA580C; border: 1px solid #FDBA74; }
+.vd-status--picked    { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+.vd-status--delivered { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+.vd-status--completed { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+.vd-status--accepted  { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
