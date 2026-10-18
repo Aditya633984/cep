@@ -13,10 +13,20 @@ const matchingRoutes   = require('./routes/matching');
 const locationRoutes   = require('./routes/location');
 const adminRoutes      = require('./routes/admin');
 const errorHandler     = require('./middleware/errorHandler');
-const { testConnection } = require('./config/db');
+const { testConnection, ensureSchema } = require('./config/db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Lazy schema initialization for serverless instances
+app.use(async (_req, _res, next) => {
+  try {
+    await ensureSchema();
+  } catch (err) {
+    // Non-blocking, queries will handle their own errors
+  }
+  next();
+});
 
 // ─── Security Headers ─────────────────────────────────────────────────────────
 app.use((_req, res, next) => {
@@ -27,13 +37,24 @@ app.use((_req, res, next) => {
 });
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
-const clientOrigin = process.env.CLIENT_URL || (
-  process.env.NODE_ENV === 'production'
-    ? 'https://your-production-domain.com'
-    : 'http://localhost:5173'
-);
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: clientOrigin,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app') ||
+      process.env.NODE_ENV !== 'production'
+    ) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 app.use(express.json());

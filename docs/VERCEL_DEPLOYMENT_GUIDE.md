@@ -87,15 +87,25 @@ npx vercel --prod
 
 The FoodBridge frontend connects to the backend through `VITE_API_URL`:
 - During local development: defaults to `http://localhost:5000/api`.
-- In production on Vercel: set the `VITE_API_URL` environment variable in the Vercel dashboard (**Settings** > **Environment Variables**).
+- When deployed on Vercel: requests must reach an HTTPS API endpoint.
 
-### Recommended Backend Hosting (Express + MySQL):
-Since the backend uses a persistent Express server and MySQL database:
-1. **Database**: Use a free cloud MySQL database:
+### Instant Testing with HTTPS Tunnel (Currently Active):
+Your backend is connected to Vercel via a secure HTTPS tunnel:
+- **Tunnel URL**: `https://7d7abb257ce00b.lhr.life/api`
+- **Frontend URL**: `https://frontend-pi-eight-59.vercel.app`
+
+To keep the tunnel running or restart it in the future:
+1. Start your backend: `cd backend && node server.js`
+2. Start the tunnel in a separate terminal: `npm run tunnel`
+3. If the tunnel URL changes, update `VITE_API_URL` in `frontend/.env` and re-deploy (`cd frontend && npx vercel --prod`).
+
+### Permanent Cloud Backend (Render / Railway + Cloud MySQL):
+For 24/7 cloud availability without running your laptop:
+1. **Database**: Use a free cloud MySQL instance:
    - [Aiven for MySQL](https://aiven.io) (Free tier)
    - [TiDB Cloud](https://tidbcloud.com) (Free tier)
    - [Railway MySQL](https://railway.app)
 2. **Backend**: Deploy `backend/` to [Render](https://render.com) or [Railway](https://railway.app):
-   - Set environment variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `CLIENT_URL=https://your-vercel-domain.vercel.app`).
+   - Set environment variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `CLIENT_URL=https://frontend-pi-eight-59.vercel.app`).
    - Run `node config/seed.js` or let `initSchema()` initialize the tables automatically.
-3. Update `VITE_API_URL` on Vercel to point to your deployed backend URL.
+3. Update `VITE_API_URL` on Vercel to point to your cloud backend URL.

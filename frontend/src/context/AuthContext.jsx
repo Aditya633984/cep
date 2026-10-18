@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
       // Notify the server (fire-and-forget; stateless logout always succeeds)
       await fetch(`${BASE_URL}/auth/logout`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
     } catch {
       // Ignore network errors

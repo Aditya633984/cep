@@ -9,9 +9,17 @@ const poolConfig = {
   password:         process.env.DB_PASSWORD || '',
   database:         process.env.DB_NAME || 'foodbridge',
   waitForConnections: true,
-  connectionLimit:  10,
+  connectionLimit:  process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT, 10) : 5,
   queueLimit:       0,
 };
+
+// If DB_SSL is true or port 4000 (TiDB Cloud), enable SSL
+if (process.env.DB_SSL === 'true' || process.env.DB_SSL === '1' || process.env.DB_PORT === '4000') {
+  poolConfig.ssl = {
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true',
+  };
+}
 
 // If DB_SOCKET is set (local dev with custom MySQL path), use Unix socket
 if (process.env.DB_SOCKET) {
@@ -24,6 +32,22 @@ const pool = mysql2.createPool(poolConfig);
 // Promisify the pool for async/await usage
 const promisePool = pool.promise();
 
+let schemaInitialized = false;
+
+/**
+ * Ensures schema exists. Safe for both traditional server and serverless.
+ */
+const ensureSchema = async () => {
+  if (schemaInitialized) return;
+  try {
+    await initSchema();
+    await migrateSchema();
+    schemaInitialized = true;
+  } catch (err) {
+    console.warn('⚠️  Schema initialization warning:', err.message);
+  }
+};
+
 /**
  * Test the database connection on startup.
  * Logs success or a descriptive error — does NOT crash the server.
@@ -33,8 +57,7 @@ const testConnection = async () => {
     const connection = await promisePool.getConnection();
     console.log('✅  MySQL connected successfully to database:', process.env.DB_NAME);
     connection.release();
-    await initSchema();
-    await migrateSchema();
+    await ensureSchema();
   } catch (err) {
     console.warn('⚠️  MySQL connection failed:', err.message);
     console.warn('   The server will continue running. Fix your DB config before Stage 2.');
@@ -184,4 +207,4 @@ const migrateSchema = async () => {
   console.log('✅  Database migrations applied (includes lat/lng coordinate columns)');
 };
 
-module.exports = { pool: promisePool, testConnection };
+module.exports = { pool: promisePool, testConnection, ensureSchema };

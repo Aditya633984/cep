@@ -3,12 +3,17 @@
  * Reads the JWT token from localStorage and attaches it to every request.
  */
 
-export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const BASE_URL =
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
 const getToken = () => localStorage.getItem('fb_token');
 
 const headers = (isFormData = false) => {
-  const h = { Authorization: `Bearer ${getToken()}` };
+  const h = {};
+  const token = getToken();
+  if (token) {
+    h['Authorization'] = `Bearer ${token}`;
+  }
   if (!isFormData) h['Content-Type'] = 'application/json';
   return h;
 };
@@ -67,6 +72,6 @@ export const api = {
 };
 
 export const BACKEND_URL =
-  (import.meta.env.VITE_API_URL
+  import.meta.env.VITE_API_URL
     ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
-    : '') || 'http://localhost:5000';
+    : (import.meta.env.PROD ? '' : 'http://localhost:5000');
