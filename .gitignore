@@ -1,10 +1,5 @@
-node_modules
-.DS_Store
+node_modules/
 .env
-.env.*
-!.env.example
-dist
-coverage
-*.log
-.vercel
-.env*
+.env.local
+dist/
+.DS_Store
