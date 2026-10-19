@@ -13,20 +13,10 @@ const matchingRoutes   = require('./routes/matching');
 const locationRoutes   = require('./routes/location');
 const adminRoutes      = require('./routes/admin');
 const errorHandler     = require('./middleware/errorHandler');
-const { testConnection, ensureSchema } = require('./config/db');
+const { testConnection } = require('./config/db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Lazy schema initialization for serverless instances
-app.use(async (_req, _res, next) => {
-  try {
-    await ensureSchema();
-  } catch (err) {
-    // Non-blocking, queries will handle their own errors
-  }
-  next();
-});
 
 // ─── Security Headers ─────────────────────────────────────────────────────────
 app.use((_req, res, next) => {
