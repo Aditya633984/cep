@@ -22,6 +22,8 @@ const initialUsers = [
     phone: '9900112233',
     password: ADMIN_PASS_HASH,
     role: 'admin',
+    email_verified: true,
+    email_verified_at: dateMinusDays(30),
     created_at: dateMinusDays(30),
   },
   {
@@ -31,6 +33,8 @@ const initialUsers = [
     phone: '9811223344',
     password: USER_PASS_HASH,
     role: 'donor',
+    email_verified: true,
+    email_verified_at: dateMinusDays(25),
     created_at: dateMinusDays(25),
   },
   {
@@ -40,6 +44,8 @@ const initialUsers = [
     phone: '9822334455',
     password: USER_PASS_HASH,
     role: 'donor',
+    email_verified: true,
+    email_verified_at: dateMinusDays(20),
     created_at: dateMinusDays(20),
   },
   {
@@ -49,6 +55,8 @@ const initialUsers = [
     phone: '9844556677',
     password: USER_PASS_HASH,
     role: 'ngo',
+    email_verified: true,
+    email_verified_at: dateMinusDays(28),
     created_at: dateMinusDays(28),
   },
   {
@@ -58,6 +66,8 @@ const initialUsers = [
     phone: '9855667788',
     password: USER_PASS_HASH,
     role: 'ngo',
+    email_verified: true,
+    email_verified_at: dateMinusDays(18),
     created_at: dateMinusDays(18),
   },
   {
@@ -67,6 +77,8 @@ const initialUsers = [
     phone: '9866778899',
     password: USER_PASS_HASH,
     role: 'ngo',
+    email_verified: true,
+    email_verified_at: dateMinusDays(15),
     created_at: dateMinusDays(15),
   },
   {
@@ -76,6 +88,8 @@ const initialUsers = [
     phone: '9877889900',
     password: USER_PASS_HASH,
     role: 'volunteer',
+    email_verified: true,
+    email_verified_at: dateMinusDays(22),
     created_at: dateMinusDays(22),
   },
   {
@@ -85,6 +99,8 @@ const initialUsers = [
     phone: '9888990011',
     password: USER_PASS_HASH,
     role: 'volunteer',
+    email_verified: true,
+    email_verified_at: dateMinusDays(14),
     created_at: dateMinusDays(14),
   },
 ];

@@ -27,25 +27,7 @@ async function runVerification() {
   console.log('1️⃣  Authenticating all user roles...');
   const donorAuth = await req('POST', '/auth/login', { email: 'donor@foodbridge.org', password: 'Password@123' });
   const ngoAuth   = await req('POST', '/auth/login', { email: 'ngo@hope.org', password: 'Password@123' });
-  // Register/login a dedicated workflow test volunteer
-  let volToken;
-  const regVolRes = await req('POST', '/auth/register', {
-    name: 'Workflow Volunteer',
-    email: 'workflow_vol@foodbridge.org',
-    password: 'Password@123',
-    role: 'volunteer',
-    phone: '9899001122',
-    vehicleType: 'motorcycle',
-    serviceArea: 'Bangalore',
-    availability: 'Full-time'
-  });
-  if (regVolRes.data.success) {
-    volToken = regVolRes.data.token;
-  } else {
-    const volLogin = await req('POST', '/auth/login', { email: 'workflow_vol@foodbridge.org', password: 'Password@123' });
-    volToken = volLogin.data.token;
-  }
-  const volAuth = { data: { token: volToken } };
+  const volAuth   = await req('POST', '/auth/login', { email: 'volunteer@foodbridge.org', password: 'Password@123' });
   const adminAuth = await req('POST', '/auth/login', { email: 'admin@foodbridge.org', password: 'Admin@12345' });
 
   if (!donorAuth.data.token || !ngoAuth.data.token || !volAuth.data.token || !adminAuth.data.token) {

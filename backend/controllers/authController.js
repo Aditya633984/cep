@@ -1,8 +1,10 @@
 'use strict';
 
-const bcrypt    = require('bcryptjs');
-const jwt       = require('jsonwebtoken');
-const mockStore = require('../services/mockStore');
+const bcrypt       = require('bcryptjs');
+const jwt          = require('jsonwebtoken');
+const mockStore    = require('../services/mockStore');
+const tokenService = require('../services/tokenService');
+const emailService = require('../services/emailService');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -19,25 +21,33 @@ const signToken = (user) => {
 
 /**
  * POST /api/auth/register
- * Body: { name, email, phone, password, role,
- *         ngo_name?, founder?, address?, food_types? }
+ * Body: {
+ *   username / name, email, phone, password, confirmPassword?, role,
+ *   ngo_name?, founder?, address?, food_types?,
+ *   vehicle_type?, service_area?, availability?
+ * }
  */
 const register = async (req, res, next) => {
   try {
     const {
-      name, email, phone, password, role,
-      ngo_name, founder, address, food_types,
-      vehicle_type, service_area, availability,
+      username,
+      name,
+      email,
+      phone,
+      password,
+      confirmPassword,
+      confirm_password,
+      role,
+      ngo_name,
+      founder,
+      address,
+      food_types,
+      vehicle_type,
+      service_area,
+      availability,
     } = req.body;
 
-    // ── Basic validation ──────────────────────────────────────────────────────
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({
-        success: false,
-        error: 'Name, email, password and role are required.',
-      });
-    }
-
+    // ── 1. Role validation & Admin Registration Protection ────────────────────
     if (role === 'admin') {
       return res.status(403).json({
         success: false,
@@ -45,85 +55,368 @@ const register = async (req, res, next) => {
       });
     }
 
-    const allowed = ['donor', 'ngo', 'volunteer'];
-    if (!allowed.includes(role)) {
-      return res.status(400).json({ success: false, error: 'Invalid role.' });
-    }
-
-    const cleanEmail = String(email).trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
+    const allowedRoles = ['donor', 'ngo', 'volunteer'];
+    if (!role || !allowedRoles.includes(role)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid email address format.',
+        error: 'Invalid role.',
       });
     }
 
-    if (password.length < 8) {
+    // ── 2. Username Validation ────────────────────────────────────────────────
+    const rawUsername = username !== undefined ? username : name;
+    if (
+      rawUsername === undefined ||
+      rawUsername === null ||
+      typeof rawUsername !== 'string' ||
+      rawUsername.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Username must contain only alphabet letters. Numbers, spaces and special characters are not allowed.',
+      });
+    }
+
+    const usernameRegex = /^[A-Za-z]+$/;
+    if (!usernameRegex.test(rawUsername)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Username must contain only alphabet letters. Numbers, spaces and special characters are not allowed.',
+      });
+    }
+    const cleanUsername = rawUsername;
+
+    // ── 3. Phone Number Validation ────────────────────────────────────────────
+    if (
+      phone === undefined ||
+      phone === null ||
+      typeof phone !== 'string' ||
+      phone.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.',
+      });
+    }
+
+    const phoneRegex = /^[6-9][0-9]{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.',
+      });
+    }
+    const cleanPhone = phone;
+
+    // ── 4. Gmail Address Validation ───────────────────────────────────────────
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Enter a valid Gmail address ending with @gmail.com.',
+      });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const gmailRegex = /^[A-Za-z0-9._%+-]+@gmail\.com$/;
+    if (!gmailRegex.test(cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Enter a valid Gmail address ending with @gmail.com.',
+      });
+    }
+
+    // ── 5. Password Validation ────────────────────────────────────────────────
+    if (!password || typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({
         success: false,
         error: 'Password must be at least 8 characters.',
       });
     }
 
-    if (role === 'ngo' && !ngo_name) {
+    const confirmation = confirmPassword !== undefined ? confirmPassword : confirm_password;
+    if (confirmation !== undefined && confirmation !== password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Passwords do not match.',
+      });
+    }
+
+    // ── 6. Role-Specific Profile Validation ───────────────────────────────────
+    if (role === 'ngo' && (!ngo_name || !String(ngo_name).trim())) {
       return res.status(400).json({
         success: false,
         error: 'NGO Name is required for NGO registration.',
       });
     }
 
-    // ── Check duplicate email ─────────────────────────────────────────────────
-    const existing = mockStore.findUserByEmail(cleanEmail);
-    if (existing) {
+    // ── 7. Duplicate Checks (Uniqueness Enforcement) ──────────────────────────
+    const existingEmail = mockStore.findUserByEmail(cleanEmail);
+    if (existingEmail) {
       return res.status(409).json({
         success: false,
         error: 'An account with this email already exists.',
       });
     }
 
-    // ── Hash password ─────────────────────────────────────────────────────────
+    const existingPhone = mockStore.findUserByPhone(cleanPhone);
+    if (existingPhone) {
+      return res.status(409).json({
+        success: false,
+        error: 'An account with this phone number already exists.',
+      });
+    }
+
+    // ── 8. Hash Password with bcrypt ──────────────────────────────────────────
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ── Create user in mock store ─────────────────────────────────────────────
+    // ── 9. Create User in Data Store (Unverified by default) ──────────────────
     const newUser = mockStore.createUser({
-      name: name.trim(),
+      name: cleanUsername,
+      username: cleanUsername,
       email: cleanEmail,
-      phone: phone || null,
+      phone: cleanPhone,
       password: hashedPassword,
       role,
+      email_verified: false,
+      email_verified_at: null,
     });
 
-    // ── Create profile ────────────────────────────────────────────────────────
+    // ── 10. Create Associated Profiles ────────────────────────────────────────
     if (role === 'ngo') {
       mockStore.upsertNgoProfile(newUser.id, {
-        ngo_name: (ngo_name || name).trim(),
-        founder: founder || null,
-        address: address || null,
+        ngo_name: (ngo_name || cleanUsername).trim(),
+        founder: founder ? String(founder).trim() : null,
+        address: address ? String(address).trim() : null,
         food_types: food_types || null,
+        phone: cleanPhone,
+        email: cleanEmail,
         city: 'Bangalore',
       });
     }
 
     if (role === 'volunteer') {
       mockStore.upsertVolunteerProfile(newUser.id, {
-        phone: phone || null,
+        phone: cleanPhone,
         vehicle_type: vehicle_type || 'motorcycle',
-        service_area: service_area || null,
-        availability: availability || null,
+        service_area: service_area ? String(service_area).trim() : null,
+        availability: availability ? String(availability).trim() : null,
       });
     }
 
-    // ── Return token ──────────────────────────────────────────────────────────
-    const userObj = { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role };
-    const token   = signToken(userObj);
+    // ── 11. Generate Verification Token & Hash ────────────────────────────────
+    const { token, tokenHash, expiresAt } = tokenService.generateVerificationToken();
+    mockStore.invalidateUserTokens(newUser.id);
+    mockStore.createVerificationToken({
+      userId: newUser.id,
+      tokenHash,
+      expiresAt,
+    });
 
+    // ── 12. Send Real Verification Email via Gmail SMTP ───────────────────────
+    try {
+      await emailService.sendVerificationEmail({
+        to: cleanEmail,
+        username: cleanUsername,
+        token,
+      });
+    } catch (emailErr) {
+      // Rollback user creation on email failure so user can retry without duplicate key error
+      mockStore.deleteUser(newUser.id);
+      return res.status(500).json({
+        success: false,
+        error: `Failed to send verification email to ${cleanEmail}. Please check that SMTP settings are configured and try again.`,
+      });
+    }
+
+    // ── 13. Return Safe Response Indicating Verification Required ─────────────
     return res.status(201).json({
       success: true,
-      message: 'Account created successfully (Demonstration Mode).',
-      token,
-      user: userObj,
+      message: 'A verification email has been sent to your Gmail address. Please check your inbox and click the verification link to verify your account.',
+      email: cleanEmail,
+      requiresVerification: true,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        username: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+        email_verified: false,
+      },
     });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({
+        success: false,
+        error: err.message.includes('phone')
+          ? 'An account with this phone number already exists.'
+          : 'An account with this email already exists.',
+      });
+    }
+    next(err);
+  }
+};
+
+// ─── Verify Email ─────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/auth/verify-email?token=...
+ * Validates verification token, marks user email as verified, and invalidates token.
+ */
+const verifyEmail = async (req, res, next) => {
+  try {
+    const rawToken = req.query.token;
+
+    if (!rawToken || typeof rawToken !== 'string' || !rawToken.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Verification token is required.',
+      });
+    }
+
+    const token = rawToken.trim();
+    let tokenHash;
+    try {
+      tokenHash = tokenService.hashToken(token);
+    } catch {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid verification token format.',
+      });
+    }
+
+    const tokenRecord = mockStore.findTokenByHash(tokenHash);
+
+    // 1. Token exists check
+    if (!tokenRecord) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or unrecognized verification token.',
+      });
+    }
+
+    // 2. Single-use check: already used
+    if (tokenRecord.used_at) {
+      return res.status(400).json({
+        success: false,
+        error: 'This verification link has already been used. Please log in or request a new verification email.',
+      });
+    }
+
+    // 3. Expiration check (15 minutes)
+    if (tokenService.isTokenExpired(tokenRecord.expires_at)) {
+      return res.status(400).json({
+        success: false,
+        error: 'This verification link has expired (15 minute validity). Please request a new verification email.',
+      });
+    }
+
+    // 4. Mark token as used
+    mockStore.markTokenUsed(tokenRecord.id);
+
+    // 5. Mark user account as verified
+    const updatedUser = mockStore.markUserEmailVerified(tokenRecord.user_id);
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'Associated user account was not found.',
+      });
+    }
+
+    // 6. Invalidate any remaining outstanding tokens for this user
+    mockStore.invalidateUserTokens(tokenRecord.user_id);
+
+    // If requested directly by a browser address bar navigation
+    const isBrowserHtmlRequest = Boolean(
+      req.headers.accept &&
+      req.headers.accept.includes('text/html') &&
+      !req.headers.accept.includes('application/json')
+    );
+
+    if (isBrowserHtmlRequest) {
+      const appBaseUrl = emailService.getAppBaseUrl();
+      return res.redirect(`${appBaseUrl}/verify-email?token=${encodeURIComponent(token)}&verified=true`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email verified successfully! Your FoodBridge account is now verified. You can log in.',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        email_verified: true,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── Resend Verification Email ────────────────────────────────────────────────
+
+/**
+ * POST /api/auth/resend-verification
+ * Body: { email }
+ * Applies rate limiting, invalidates old token, generates new token, and sends real email.
+ */
+const resendVerification = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Enter a valid Gmail address ending with @gmail.com.',
+      });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const gmailRegex = /^[A-Za-z0-9._%+-]+@gmail\.com$/;
+    if (!gmailRegex.test(cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Enter a valid Gmail address ending with @gmail.com.',
+      });
+    }
+
+    const user = mockStore.findUserByEmail(cleanEmail);
+
+    // To prevent account enumeration, return generic success if user does not exist or is already verified
+    const genericSuccessResponse = {
+      success: true,
+      message: 'If an unverified account exists for this Gmail address, a verification link has been sent.',
+    };
+
+    if (!user || user.email_verified) {
+      return res.status(200).json(genericSuccessResponse);
+    }
+
+    // Invalidate previous tokens
+    mockStore.invalidateUserTokens(user.id);
+
+    // Generate new token & store hash
+    const { token, tokenHash, expiresAt } = tokenService.generateVerificationToken();
+    mockStore.createVerificationToken({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    });
+
+    // Send verification email via Gmail SMTP
+    try {
+      await emailService.sendVerificationEmail({
+        to: cleanEmail,
+        username: user.name,
+        token,
+      });
+    } catch (emailErr) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to send verification email. Please check your email configuration and try again.',
+      });
+    }
+
+    return res.status(200).json(genericSuccessResponse);
   } catch (err) {
     next(err);
   }
@@ -139,7 +432,7 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (!email || !password || !String(email).trim() || !String(password)) {
       return res.status(400).json({
         success: false,
         error: 'Email and password are required.',
@@ -156,7 +449,7 @@ const login = async (req, res, next) => {
       });
     }
 
-    // ── Compare password ──────────────────────────────────────────────────────
+    // ── Compare password using bcrypt ─────────────────────────────────────────
     let isMatch = false;
     try {
       isMatch = await bcrypt.compare(password, user.password);
@@ -164,7 +457,7 @@ const login = async (req, res, next) => {
       isMatch = false;
     }
 
-    // Also support direct match for default demo passwords
+    // Support demo passwords for fixtures
     if (!isMatch) {
       if (
         (user.role === 'admin' && password === 'Admin@12345') ||
@@ -181,13 +474,32 @@ const login = async (req, res, next) => {
       });
     }
 
-    // ── Sign token ────────────────────────────────────────────────────────────
+    // ── Check Email Verification Status ───────────────────────────────────────
+    // User must verify email before accessing the platform
+    if (user.email_verified === false || user.email_verified === 0) {
+      return res.status(403).json({
+        success: false,
+        error: 'Please verify your email before logging in. Check your Gmail inbox for the verification link.',
+        requiresVerification: true,
+        email: user.email,
+      });
+    }
+
+    // ── Sign token & Return Safe User Object ──────────────────────────────────
     const token = signToken(user);
-    const userObj = { id: user.id, name: user.name, email: user.email, role: user.role };
+    const userObj = {
+      id: user.id,
+      name: user.name,
+      username: user.username || user.name,
+      email: user.email,
+      phone: user.phone || null,
+      role: user.role,
+      email_verified: true,
+    };
 
     return res.status(200).json({
       success: true,
-      message: 'Login successful (Demonstration Mode).',
+      message: 'Login successful.',
       token,
       user: userObj,
     });
@@ -224,4 +536,12 @@ const getMe = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, logout, getMe };
+module.exports = {
+  register,
+  login,
+  logout,
+  getMe,
+  verifyEmail,
+  resendVerification,
+};
+

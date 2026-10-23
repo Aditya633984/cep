@@ -32,13 +32,18 @@ const formatDateTime = (d) => {
   return date.toISOString().slice(0, 19).replace('T', ' ');
 };
 
+let testPhoneCounter = 9870000000;
+
 const resetDatabase = async () => {
   mockStore.users = [];
   mockStore.ngoProfiles = [];
   mockStore.volunteerProfiles = [];
   mockStore.donations = [];
+  mockStore.verificationTokens = [];
   mockStore.nextUserId = 1;
   mockStore.nextDonationId = 1;
+  mockStore.nextVerificationTokenId = 1;
+  testPhoneCounter = 9870000000;
 };
 
 const createTestUser = async ({
@@ -46,7 +51,8 @@ const createTestUser = async ({
   email = 'test@example.com',
   password = 'password123',
   role = 'donor',
-  phone = '1234567890',
+  phone,
+  email_verified = true,
   ngo_name = 'Test NGO',
   food_types = 'Cooked Food, Dry Ration, vegetarian',
   is_available = 1,
@@ -54,12 +60,15 @@ const createTestUser = async ({
   vehicle_type = 'motorcycle',
 } = {}) => {
   const hashedPassword = await bcrypt.hash(password, 8);
+  const userPhone = phone !== undefined ? phone : String(testPhoneCounter++);
   const user = mockStore.createUser({
     name,
     email: email.toLowerCase(),
-    phone,
+    phone: userPhone,
     password: hashedPassword,
     role,
+    email_verified,
+    email_verified_at: email_verified ? new Date().toISOString() : null,
   });
 
   if (role === 'ngo') {

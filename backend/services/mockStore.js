@@ -25,14 +25,16 @@ const clone = (data) => JSON.parse(JSON.stringify(data));
 
 class MockDataStore {
   constructor() {
-    this.users             = clone(initialUsers);
-    this.ngoProfiles       = clone(initialNgoProfiles);
-    this.volunteerProfiles = clone(initialVolunteerProfiles);
-    this.donations         = clone(initialDonations);
-    this.nextUserId        = 100;
-    this.nextNgoId         = 100;
-    this.nextVolId         = 100;
-    this.nextDonationId    = 100;
+    this.users                  = clone(initialUsers);
+    this.ngoProfiles            = clone(initialNgoProfiles);
+    this.volunteerProfiles      = clone(initialVolunteerProfiles);
+    this.donations              = clone(initialDonations);
+    this.verificationTokens     = [];
+    this.nextUserId             = 100;
+    this.nextNgoId              = 100;
+    this.nextVolId              = 100;
+    this.nextDonationId         = 100;
+    this.nextVerificationTokenId = 1;
 
     this.loadFromCache();
   }
@@ -44,12 +46,14 @@ class MockDataStore {
         const raw = fs.readFileSync(cacheFile, 'utf8');
         const parsed = JSON.parse(raw);
         if (parsed.users && parsed.donations) {
-          this.users             = parsed.users;
-          this.ngoProfiles       = parsed.ngoProfiles || this.ngoProfiles;
-          this.volunteerProfiles = parsed.volunteerProfiles || this.volunteerProfiles;
-          this.donations         = parsed.donations;
-          this.nextUserId        = parsed.nextUserId || 100;
-          this.nextDonationId    = parsed.nextDonationId || 100;
+          this.users                  = parsed.users;
+          this.ngoProfiles            = parsed.ngoProfiles || this.ngoProfiles;
+          this.volunteerProfiles      = parsed.volunteerProfiles || this.volunteerProfiles;
+          this.donations              = parsed.donations;
+          this.verificationTokens     = parsed.verificationTokens || [];
+          this.nextUserId             = parsed.nextUserId || 100;
+          this.nextDonationId         = parsed.nextDonationId || 100;
+          this.nextVerificationTokenId = parsed.nextVerificationTokenId || 1;
         }
       }
     } catch (e) {
@@ -61,12 +65,14 @@ class MockDataStore {
     if (process.env.NODE_ENV === 'test') return;
     try {
       const payload = {
-        users:             this.users,
-        ngoProfiles:       this.ngoProfiles,
-        volunteerProfiles: this.volunteerProfiles,
-        donations:         this.donations,
-        nextUserId:        this.nextUserId,
-        nextDonationId:    this.nextDonationId,
+        users:                  this.users,
+        ngoProfiles:            this.ngoProfiles,
+        volunteerProfiles:      this.volunteerProfiles,
+        donations:              this.donations,
+        verificationTokens:     this.verificationTokens,
+        nextUserId:             this.nextUserId,
+        nextDonationId:         this.nextDonationId,
+        nextVerificationTokenId: this.nextVerificationTokenId,
       };
       fs.writeFileSync(cacheFile, JSON.stringify(payload, null, 2), 'utf8');
     } catch (e) {
@@ -75,14 +81,16 @@ class MockDataStore {
   }
 
   resetToFixtures() {
-    this.users             = clone(initialUsers);
-    this.ngoProfiles       = clone(initialNgoProfiles);
-    this.volunteerProfiles = clone(initialVolunteerProfiles);
-    this.donations         = clone(initialDonations);
-    this.nextUserId        = 100;
-    this.nextNgoId         = 100;
-    this.nextVolId         = 100;
-    this.nextDonationId    = 100;
+    this.users                  = clone(initialUsers);
+    this.ngoProfiles            = clone(initialNgoProfiles);
+    this.volunteerProfiles      = clone(initialVolunteerProfiles);
+    this.donations              = clone(initialDonations);
+    this.verificationTokens     = [];
+    this.nextUserId             = 100;
+    this.nextNgoId              = 100;
+    this.nextVolId              = 100;
+    this.nextDonationId         = 100;
+    this.nextVerificationTokenId = 1;
     if (fs.existsSync(cacheFile) && process.env.NODE_ENV !== 'test') {
       try { fs.unlinkSync(cacheFile); } catch (e) {}
     }
@@ -104,19 +112,109 @@ class MockDataStore {
     return clone(this.users.find((u) => u.email.toLowerCase() === clean) || null);
   }
 
+  findUserByPhone(phone) {
+    if (!phone) return null;
+    const clean = String(phone).trim();
+    return clone(this.users.find((u) => u.phone && String(u.phone).trim() === clean) || null);
+  }
+
   createUser(userData) {
+    const cleanEmail = userData.email.trim().toLowerCase();
+    const cleanPhone = userData.phone ? String(userData.phone).trim() : null;
+
+    if (this.users.some((u) => u.email.toLowerCase() === cleanEmail)) {
+      const err = new Error(`Duplicate entry '${cleanEmail}' for key 'users.email'`);
+      err.code = 'ER_DUP_ENTRY';
+      throw err;
+    }
+
+    if (cleanPhone && this.users.some((u) => u.phone && String(u.phone).trim() === cleanPhone)) {
+      const err = new Error(`Duplicate entry '${cleanPhone}' for key 'users.phone'`);
+      err.code = 'ER_DUP_ENTRY';
+      throw err;
+    }
+
     const newUser = {
       id: this.nextUserId++,
       name: userData.name.trim(),
-      email: userData.email.trim().toLowerCase(),
-      phone: userData.phone || null,
+      username: userData.username ? userData.username.trim() : userData.name.trim(),
+      email: cleanEmail,
+      phone: cleanPhone,
       password: userData.password, // already hashed
       role: userData.role,
+      email_verified: Boolean(userData.email_verified),
+      email_verified_at: userData.email_verified_at || null,
       created_at: new Date().toISOString(),
     };
     this.users.push(newUser);
     this.saveToCache();
     return clone(newUser);
+  }
+
+  deleteUser(id) {
+    const numId = Number(id);
+    const idx = this.users.findIndex((u) => u.id === numId);
+    if (idx !== -1) {
+      this.users.splice(idx, 1);
+      this.ngoProfiles = this.ngoProfiles.filter((p) => p.user_id !== numId);
+      this.volunteerProfiles = this.volunteerProfiles.filter((v) => v.user_id !== numId);
+      this.verificationTokens = this.verificationTokens.filter((t) => t.user_id !== numId);
+      this.saveToCache();
+      return true;
+    }
+    return false;
+  }
+
+  markUserEmailVerified(userId) {
+    const numId = Number(userId);
+    const u = this.users.find((user) => user.id === numId);
+    if (!u) return null;
+    u.email_verified = true;
+    u.email_verified_at = new Date().toISOString();
+    this.saveToCache();
+    return clone(u);
+  }
+
+  // ─── Verification Tokens ────────────────────────────────────────────────────
+  createVerificationToken({ userId, tokenHash, expiresAt }) {
+    const tokenRecord = {
+      id: this.nextVerificationTokenId++,
+      user_id: Number(userId),
+      token_hash: tokenHash,
+      expires_at: expiresAt instanceof Date ? expiresAt.toISOString() : expiresAt,
+      used_at: null,
+      created_at: new Date().toISOString(),
+    };
+    this.verificationTokens.push(tokenRecord);
+    this.saveToCache();
+    return clone(tokenRecord);
+  }
+
+  findTokenByHash(tokenHash) {
+    if (!tokenHash) return null;
+    const t = this.verificationTokens.find((item) => item.token_hash === tokenHash);
+    return clone(t || null);
+  }
+
+  markTokenUsed(id) {
+    const numId = Number(id);
+    const t = this.verificationTokens.find((item) => item.id === numId);
+    if (t) {
+      t.used_at = new Date().toISOString();
+      this.saveToCache();
+      return clone(t);
+    }
+    return null;
+  }
+
+  invalidateUserTokens(userId) {
+    const numId = Number(userId);
+    this.verificationTokens.forEach((t) => {
+      if (t.user_id === numId && !t.used_at) {
+        t.used_at = new Date().toISOString();
+      }
+    });
+    this.saveToCache();
   }
 
   // ─── NGO Profiles ───────────────────────────────────────────────────────────

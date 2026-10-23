@@ -11,6 +11,7 @@ import About             from './pages/About';
 import Contact           from './pages/Contact';
 import Login             from './pages/Login';
 import Register          from './pages/Register';
+import VerifyEmail       from './pages/VerifyEmail';
 import NotFound          from './pages/NotFound';
 import DonorDashboard    from './pages/DonorDashboard';
 import NgoDashboard      from './pages/NgoDashboard';
@@ -39,11 +40,12 @@ export default function App() {
         <AppShell>
           <Routes>
             {/* ── Public Routes ──────────────────────────────────── */}
-            <Route path="/"         element={<Home />}     />
-            <Route path="/about"    element={<About />}    />
-            <Route path="/contact"  element={<Contact />}  />
-            <Route path="/login"    element={<Login />}    />
-            <Route path="/register" element={<Register />} />
+            <Route path="/"             element={<Home />}        />
+            <Route path="/about"        element={<About />}       />
+            <Route path="/contact"      element={<Contact />}     />
+            <Route path="/login"        element={<Login />}       />
+            <Route path="/register"     element={<Register />}    />
+            <Route path="/verify-email" element={<VerifyEmail />} />
 
             {/* ── Protected Dashboard Routes ─────────────────────── */}
             <Route

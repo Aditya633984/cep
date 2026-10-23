@@ -77,6 +77,30 @@ const mockQuery = async (sql, params = []) => {
     return [mockStore.getDonations()];
   }
 
+  // 5. verification_tokens
+  if (lower.includes('from verification_tokens')) {
+    if (lower.includes('where token_hash = ?')) {
+      const hash = params[0];
+      const token = mockStore.findTokenByHash(hash);
+      return [token ? [token] : []];
+    }
+    if (lower.includes('where user_id = ?')) {
+      const userId = Number(params[0]);
+      const list = mockStore.verificationTokens.filter(t => t.user_id === userId);
+      return [list];
+    }
+    return [mockStore.verificationTokens || []];
+  }
+
+  // 6. UPDATE users
+  if (lower.startsWith('update users set')) {
+    if (lower.includes('email_verified = 1') || lower.includes('email_verified = true')) {
+      const userId = Number(params[params.length - 1]);
+      mockStore.markUserEmailVerified(userId);
+      return [{ affectedRows: 1 }, []];
+    }
+  }
+
   // Default empty result set matching mysql2 [rows, fields] signature
   return [[], []];
 };

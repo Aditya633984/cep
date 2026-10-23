@@ -1,7 +1,8 @@
 'use strict';
 
-const request = require('supertest');
-const app     = require('../server');
+const request      = require('supertest');
+const app          = require('../server');
+const emailService = require('../services/emailService');
 
 async function runTests() {
   console.log('🧪 Starting FoodBridge Mock Backend End-to-End Verification...\n');
@@ -73,30 +74,68 @@ async function runTests() {
     if (res.status !== 401) throw new Error(`Expected 401 but got ${res.status}`);
   });
 
-  // 7. Register new user
-  const randomEmail = `newuser_${Date.now()}@example.com`;
+  // 7. Register new user (Email Verification Flow)
+  const randomEmail = `newuser${Date.now()}@gmail.com`;
+  const randomPhone = '9' + String(Date.now()).slice(-9);
+  let verificationToken = '';
   let newUserToken = '';
-  await test('POST /api/auth/register registers new donor account', async () => {
+
+  await test('POST /api/auth/register creates unverified account and sends verification email', async () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({
-        name: 'New Test Donor',
+        name: 'NewTestDonor',
         email: randomEmail,
-        phone: '9899001122',
+        phone: randomPhone,
         password: 'Password@123',
         role: 'donor',
       });
-    if (res.status !== 201 || !res.body.token) throw new Error(res.body.error || 'Registration failed');
+    if (res.status !== 201 || !res.body.requiresVerification) {
+      throw new Error(res.body.error || 'Registration failed');
+    }
+    const lastEmail = emailService.getLastSentEmail();
+    if (!lastEmail) throw new Error('Verification email was not dispatched');
+    verificationToken = new URL(lastEmail.verificationUrl).searchParams.get('token');
+  });
+
+  // 7b. Attempt login before verification
+  await test('POST /api/auth/login rejects unverified user with 403', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: randomEmail, password: 'Password@123' });
+    if (res.status !== 403 || !res.body.requiresVerification) {
+      throw new Error(`Expected 403 with requiresVerification but got ${res.status}`);
+    }
+  });
+
+  // 7c. Verify email with token
+  await test('GET /api/auth/verify-email validates token and marks user verified', async () => {
+    const res = await request(app).get(`/api/auth/verify-email?token=${verificationToken}`);
+    if (res.status !== 200 || !res.body.success) {
+      throw new Error(res.body.error || 'Email verification failed');
+    }
+  });
+
+  // 7d. Log in after email verification
+  await test('POST /api/auth/login logs in newly verified user successfully', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: randomEmail, password: 'Password@123' });
+    if (res.status !== 200 || !res.body.token) {
+      throw new Error(res.body.error || 'Login failed after verification');
+    }
     newUserToken = res.body.token;
   });
 
   // 8. Reject duplicate email
+  const anotherPhone = '8' + String(Date.now()).slice(-9);
   await test('POST /api/auth/register rejects duplicate email with 409', async () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({
-        name: 'Duplicate Donor',
+        name: 'DuplicateDonor',
         email: randomEmail,
+        phone: anotherPhone,
         password: 'Password@123',
         role: 'donor',
       });
@@ -121,6 +160,8 @@ async function runTests() {
 
   // 11. Create a donation
   let createdDonationId = null;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const futureStr = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ');
   await test('POST /api/donor/donations creates a new donation', async () => {
     const res = await request(app)
       .post('/api/donor/donations')
@@ -132,8 +173,8 @@ async function runTests() {
         unit: 'kg',
         people_served: 35,
         food_type: 'vegetarian',
-        preparation_date: '2026-10-19',
-        best_before: '2026-10-20 18:00:00',
+        preparation_date: todayStr,
+        best_before: futureStr,
         pickup_address: 'Grand Plaza Hotel Kitchen Dock',
         city: 'Bangalore',
         description: 'Fresh lunch packs.',
