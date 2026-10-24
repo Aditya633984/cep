@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute   from './components/ProtectedRoute';
@@ -9,9 +9,6 @@ import Footer   from './components/Footer';
 import Home              from './pages/Home';
 import About             from './pages/About';
 import Contact           from './pages/Contact';
-import Login             from './pages/Login';
-import Register          from './pages/Register';
-import VerifyEmail       from './pages/VerifyEmail';
 import NotFound          from './pages/NotFound';
 import DonorDashboard    from './pages/DonorDashboard';
 import NgoDashboard      from './pages/NgoDashboard';
@@ -39,47 +36,56 @@ export default function App() {
       <Router>
         <AppShell>
           <Routes>
-            {/* ── Public Routes ──────────────────────────────────── */}
+            {/* ── Public & Informational Routes ──────────────────── */}
             <Route path="/"             element={<Home />}        />
             <Route path="/about"        element={<About />}       />
             <Route path="/contact"      element={<Contact />}     />
-            <Route path="/login"        element={<Login />}       />
-            <Route path="/register"     element={<Register />}    />
-            <Route path="/verify-email" element={<VerifyEmail />} />
 
-            {/* ── Protected Dashboard Routes ─────────────────────── */}
+            {/* ── Direct Access Dashboard Portals ─────────────────── */}
+            <Route path="/donor" element={<Navigate to="/donor/dashboard" replace />} />
             <Route
               path="/donor/dashboard"
               element={
-                <ProtectedRoute role="donor">
+                <ProtectedRoute>
                   <DonorDashboard />
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/ngo" element={<Navigate to="/ngo/dashboard" replace />} />
             <Route
               path="/ngo/dashboard"
               element={
-                <ProtectedRoute role="ngo">
+                <ProtectedRoute>
                   <NgoDashboard />
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/volunteer" element={<Navigate to="/volunteer/dashboard" replace />} />
             <Route
               path="/volunteer/dashboard"
               element={
-                <ProtectedRoute role="volunteer">
+                <ProtectedRoute>
                   <VolunteerDashboard />
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route
               path="/admin/dashboard"
               element={
-                <ProtectedRoute role="admin">
+                <ProtectedRoute>
                   <AdminDashboard />
                 </ProtectedRoute>
               }
             />
+
+            {/* ── Legacy Auth Routes: Open Direct Redirection ─────── */}
+            <Route path="/login"        element={<Navigate to="/donor/dashboard" replace />} />
+            <Route path="/register"     element={<Navigate to="/donor/dashboard" replace />} />
+            <Route path="/verify-email" element={<Navigate to="/donor/dashboard" replace />} />
 
             {/* ── 404 ────────────────────────────────────────────── */}
             <Route path="*" element={<NotFound />} />

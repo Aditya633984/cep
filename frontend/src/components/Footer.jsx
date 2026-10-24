@@ -8,9 +8,10 @@ const QUICK_LINKS = [
 ];
 
 const GET_INVOLVED = [
-  { to: '/register', label: 'Donate Food'       },
-  { to: '/register', label: 'Join as Volunteer'  },
-  { to: '/register', label: 'Register as NGO'    },
+  { to: '/donor/dashboard',     label: 'Donor Portal'     },
+  { to: '/volunteer/dashboard', label: 'Volunteer Portal' },
+  { to: '/ngo/dashboard',       label: 'NGO Portal'       },
+  { to: '/admin/dashboard',     label: 'Admin Portal'     },
 ];
 
 const SUPPORT = [

@@ -77,11 +77,11 @@ export default function Home() {
             </p>
 
             <div className="hero__actions">
-              <Link to="/register" id="cta-donate" className="btn btn-accent btn-lg">
+              <Link to="/donor/dashboard" id="cta-donate" className="btn btn-accent btn-lg">
                 🍱 Donate Food
               </Link>
-              <Link to="/register" id="cta-volunteer" className="btn btn-outline-white btn-lg">
-                🙋 Join as Volunteer
+              <Link to="/volunteer/dashboard" id="cta-volunteer" className="btn btn-outline-white btn-lg">
+                🙋 Volunteer Portal
               </Link>
             </div>
           </div>
@@ -210,11 +210,11 @@ export default function Home() {
             Join hundreds of donors, volunteers, and NGOs already on FoodBridge.
           </p>
           <div className="cta-section__actions">
-            <Link to="/register" id="cta-banner-donate" className="btn btn-accent btn-lg">
+            <Link to="/donor/dashboard" id="cta-banner-donate" className="btn btn-accent btn-lg">
               🍱 Start Donating
             </Link>
-            <Link to="/register" id="cta-banner-volunteer" className="btn btn-outline-white btn-lg">
-              🙋 Volunteer Now
+            <Link to="/volunteer/dashboard" id="cta-banner-volunteer" className="btn btn-outline-white btn-lg">
+              🙋 Volunteer Portal
             </Link>
           </div>
         </div>
