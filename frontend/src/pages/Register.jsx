@@ -27,6 +27,7 @@ export default function Register() {
   const navigate   = useNavigate();
 
   const [formData, setFormData] = useState({
+    fullName: '',
     username: '',
     email: '',
     phone: '',
@@ -71,6 +72,13 @@ export default function Register() {
   // ── Validation Helper ───────────────────────────────────────────────────────
   const validateField = (name, value, allData) => {
     switch (name) {
+      case 'fullName': {
+        if (!value || typeof value !== 'string' || !value.trim()) {
+          return 'Full name is required.';
+        }
+        return '';
+      }
+
       case 'username': {
         if (!value || typeof value !== 'string' || !value.trim()) {
           return 'Username must contain only alphabet letters. Numbers, spaces and special characters are not allowed.';
@@ -223,6 +231,7 @@ export default function Register() {
 
     // Run comprehensive validation on all fields
     const newErrors = {};
+    newErrors.fullName = validateField('fullName', formData.fullName, formData);
     newErrors.username = validateField('username', formData.username, formData);
     newErrors.email = validateField('email', formData.email, formData);
     newErrors.phone = validateField('phone', formData.phone, formData);
@@ -244,8 +253,9 @@ export default function Register() {
     setLoading(true);
 
     const payload = {
+      fullName: (formData.fullName || formData.username).trim(),
+      name:     (formData.fullName || formData.username).trim(),
       username: formData.username.trim(),
-      name:     formData.username.trim(),
       email:    formData.email.trim(),
       phone:    formData.phone.trim(),
       password: formData.password,
@@ -282,6 +292,8 @@ export default function Register() {
           setErrors((prev) => ({ ...prev, email: errorMsg }));
         } else if (errorMsg.toLowerCase().includes('already exists') && errorMsg.toLowerCase().includes('phone')) {
           setErrors((prev) => ({ ...prev, phone: errorMsg }));
+        } else if (errorMsg.toLowerCase().includes('already exists') && errorMsg.toLowerCase().includes('username')) {
+          setErrors((prev) => ({ ...prev, username: errorMsg }));
         }
         return;
       }
@@ -490,6 +502,26 @@ export default function Register() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Full Name Input */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="reg-fullname">Full Name *</label>
+              <input
+                id="reg-fullname"
+                name="fullName"
+                type="text"
+                className={`form-input ${errors.fullName ? 'form-input--error' : ''}`}
+                placeholder="e.g. Aditya Sharma"
+                value={formData.fullName}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                autoComplete="name"
+                required
+              />
+              {errors.fullName && (
+                <span className="field-error" role="alert">{errors.fullName}</span>
+              )}
             </div>
 
             {/* Username Input */}

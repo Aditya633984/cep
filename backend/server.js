@@ -93,6 +93,27 @@ if (require.main === module) {
     console.log(`\n🚀  FoodBridge API running on http://localhost:${PORT}`);
     console.log(`📡  Environment: ${process.env.NODE_ENV || 'development'}\n`);
     await testConnection();
+
+    // ── Safe SMTP Diagnostic on Server Startup ──────────────────────────────
+    try {
+      const emailService = require('./services/emailService');
+      const smtpCheck = await emailService.verifySmtpConnection();
+      if (smtpCheck.success) {
+        console.log(`\n📧  [SMTP] ✅ ${smtpCheck.message}\n`);
+      } else {
+        console.warn(`\n📧  [SMTP Diagnostic] ⚠️  Gmail SMTP not ready for live delivery:`);
+        console.warn(`    - Error Code: ${smtpCheck.errorCode || 'UNCONFIGURED'}`);
+        console.warn(`    - Details: ${smtpCheck.message}`);
+        if (smtpCheck.missing && smtpCheck.missing.length > 0) {
+          console.warn(`    - Missing / Placeholder: ${smtpCheck.missing.join(', ')}`);
+        }
+        if (smtpCheck.advice) {
+          console.warn(`    - Next Step: ${smtpCheck.advice}\n`);
+        }
+      }
+    } catch (smtpErr) {
+      console.warn(`\n📧  [SMTP Diagnostic] Error during startup verification: ${smtpErr.message}\n`);
+    }
   });
 }
 

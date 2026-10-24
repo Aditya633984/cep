@@ -118,6 +118,19 @@ class MockDataStore {
     return clone(this.users.find((u) => u.phone && String(u.phone).trim() === clean) || null);
   }
 
+  findUserByUsername(username) {
+    if (!username) return null;
+    const clean = String(username).trim().toLowerCase();
+    return clone(
+      this.users.find(
+        (u) =>
+          u.email_verified &&
+          ((u.username && String(u.username).trim().toLowerCase() === clean) ||
+            (u.name && String(u.name).trim().toLowerCase() === clean))
+      ) || null
+    );
+  }
+
   createUser(userData) {
     const cleanEmail = userData.email.trim().toLowerCase();
     const cleanPhone = userData.phone ? String(userData.phone).trim() : null;

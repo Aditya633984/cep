@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/Navbar.css';
 
@@ -19,21 +19,24 @@ const ROLE_LABELS = {
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const toggleMenu = () => setMenuOpen((prev) => !prev);
   const closeMenu  = () => setMenuOpen(false);
 
-  const dashPath = user ? (ROLE_DASHBOARD[user.role] || '/donor/dashboard') : '/donor/dashboard';
+  const handleLogout = async () => {
+    closeMenu();
+    await logout();
+    navigate('/', { replace: true });
+  };
+
+  const dashPath = user ? (ROLE_DASHBOARD[user.role] || '/') : '/';
 
   const navLinks = [
-    { to: '/',                    label: 'Home'             },
-    { to: '/donor/dashboard',     label: 'Donor Portal'     },
-    { to: '/ngo/dashboard',       label: 'NGO Portal'       },
-    { to: '/volunteer/dashboard', label: 'Volunteer Portal' },
-    { to: '/admin/dashboard',     label: 'Admin Portal'     },
-    { to: '/about',               label: 'About'            },
-    { to: '/contact',             label: 'Contact'          },
+    { to: '/',        label: 'Home'    },
+    { to: '/about',   label: 'About'   },
+    { to: '/contact', label: 'Contact' },
   ];
 
   return (
@@ -65,18 +68,34 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* Direct Access CTA / Profile Indicator */}
+        {/* Desktop Auth Buttons */}
         <div className="navbar__actions">
-          <Link to={dashPath} className="navbar__user-info" title="Current Active Portal Profile">
-            <span className="navbar__user-avatar">
-              {user?.name?.charAt(0)?.toUpperCase() || '🍱'}
-            </span>
-            <span className="navbar__user-name">{user?.name || 'Active Portal'}</span>
-            <span className="navbar__user-role">{ROLE_LABELS[user?.role] || 'Open Access'}</span>
-          </Link>
-          <Link to="/donor/dashboard" className="btn btn-primary" id="nav-direct-donate">
-            🍱 Donate Food
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link to={dashPath} className="navbar__user-info">
+                <span className="navbar__user-avatar">
+                  {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                </span>
+                <span className="navbar__user-name">{user?.name}</span>
+                <span className="navbar__user-role">{ROLE_LABELS[user?.role]}</span>
+              </Link>
+              <Link to={dashPath} className="btn btn-outline">
+                Dashboard
+              </Link>
+              <button onClick={handleLogout} className="btn btn-primary">
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="btn btn-outline">
+                Log In
+              </Link>
+              <Link to="/register" className="btn btn-primary">
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Hamburger */}
@@ -112,15 +131,21 @@ export default function Navbar() {
         <div className="navbar__mobile-divider" />
 
         <div className="navbar__mobile-actions">
-          <Link to="/donor/dashboard" className="btn btn-primary" onClick={closeMenu}>
-            🍱 Open Donor Portal
-          </Link>
-          <Link to="/ngo/dashboard" className="btn btn-outline" onClick={closeMenu}>
-            🏢 Open NGO Portal
-          </Link>
-          <Link to="/volunteer/dashboard" className="btn btn-outline" onClick={closeMenu}>
-            🙋 Open Volunteer Portal
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link to={dashPath} className="btn btn-outline" onClick={closeMenu}>
+                Dashboard
+              </Link>
+              <button onClick={handleLogout} className="btn btn-primary">
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login"    className="btn btn-outline"  onClick={closeMenu}>Log In</Link>
+              <Link to="/register" className="btn btn-primary"  onClick={closeMenu}>Get Started</Link>
+            </>
+          )}
         </div>
       </div>
     </nav>
