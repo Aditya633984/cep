@@ -149,17 +149,28 @@ const register = async (req, res, next) => {
       });
     }
 
-    // ── 7. Duplicate Checks (Uniqueness Enforcement) ──────────────────────────
+    // ── 7. Duplicate Checks & Unverified Retry Handling ──────────────────────
     const existingEmail = mockStore.findUserByEmail(cleanEmail);
-    if (existingEmail) {
+    const existingPhone = mockStore.findUserByPhone(cleanPhone);
+
+    // If an account with this email is already verified, reject registration
+    if (existingEmail && existingEmail.email_verified) {
       return res.status(409).json({
         success: false,
         error: 'An account with this email already exists.',
       });
     }
 
-    const existingPhone = mockStore.findUserByPhone(cleanPhone);
-    if (existingPhone) {
+    // If an unverified account with this email exists with a DIFFERENT phone number, reject duplicate
+    if (existingEmail && !existingEmail.email_verified && existingEmail.phone !== cleanPhone) {
+      return res.status(409).json({
+        success: false,
+        error: 'An account with this email already exists.',
+      });
+    }
+
+    // If phone number belongs to another user account (verified or different email), reject
+    if (existingPhone && (!existingEmail || existingPhone.id !== existingEmail.id)) {
       return res.status(409).json({
         success: false,
         error: 'An account with this phone number already exists.',
@@ -169,21 +180,37 @@ const register = async (req, res, next) => {
     // ── 8. Hash Password with bcrypt ──────────────────────────────────────────
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ── 9. Create User in Data Store (Unverified by default) ──────────────────
-    const newUser = mockStore.createUser({
-      name: cleanUsername,
-      username: cleanUsername,
-      email: cleanEmail,
-      phone: cleanPhone,
-      password: hashedPassword,
-      role,
-      email_verified: false,
-      email_verified_at: null,
-    });
+    // ── 9. Create or Reuse Pending User in Data Store ─────────────────────────
+    let targetUser;
+    let isExistingUnverified = false;
+
+    if (existingEmail && !existingEmail.email_verified && existingEmail.phone === cleanPhone) {
+      // Safe retry using the existing unverified account (never creates duplicates or overwrites verified accounts)
+      isExistingUnverified = true;
+      targetUser = mockStore.updateUser(existingEmail.id, {
+        name: cleanUsername,
+        username: cleanUsername,
+        phone: cleanPhone,
+        password: hashedPassword,
+        role,
+        email_verified: false,
+      });
+    } else {
+      targetUser = mockStore.createUser({
+        name: cleanUsername,
+        username: cleanUsername,
+        email: cleanEmail,
+        phone: cleanPhone,
+        password: hashedPassword,
+        role,
+        email_verified: false,
+        email_verified_at: null,
+      });
+    }
 
     // ── 10. Create Associated Profiles ────────────────────────────────────────
     if (role === 'ngo') {
-      mockStore.upsertNgoProfile(newUser.id, {
+      mockStore.upsertNgoProfile(targetUser.id, {
         ngo_name: (ngo_name || cleanUsername).trim(),
         founder: founder ? String(founder).trim() : null,
         address: address ? String(address).trim() : null,
@@ -195,7 +222,7 @@ const register = async (req, res, next) => {
     }
 
     if (role === 'volunteer') {
-      mockStore.upsertVolunteerProfile(newUser.id, {
+      mockStore.upsertVolunteerProfile(targetUser.id, {
         phone: cleanPhone,
         vehicle_type: vehicle_type || 'motorcycle',
         service_area: service_area ? String(service_area).trim() : null,
@@ -203,11 +230,11 @@ const register = async (req, res, next) => {
       });
     }
 
-    // ── 11. Generate Verification Token & Hash ────────────────────────────────
+    // ── 11. Generate Cryptographically Secure Verification Token & Hash ───────
     const { token, tokenHash, expiresAt } = tokenService.generateVerificationToken();
-    mockStore.invalidateUserTokens(newUser.id);
+    mockStore.invalidateUserTokens(targetUser.id);
     mockStore.createVerificationToken({
-      userId: newUser.id,
+      userId: targetUser.id,
       tokenHash,
       expiresAt,
     });
@@ -220,8 +247,11 @@ const register = async (req, res, next) => {
         token,
       });
     } catch (emailErr) {
-      // Rollback user creation on email failure so user can retry without duplicate key error
-      mockStore.deleteUser(newUser.id);
+      // If newly created account failed initial email dispatch, roll it back so user can retry cleanly
+      if (!isExistingUnverified) {
+        mockStore.deleteUser(targetUser.id);
+      }
+      console.error(`[Register] Verification email failed for ${cleanEmail}:`, emailErr.message);
       return res.status(500).json({
         success: false,
         error: `Failed to send verification email to ${cleanEmail}. Please check that SMTP settings are configured and try again.`,
@@ -235,12 +265,12 @@ const register = async (req, res, next) => {
       email: cleanEmail,
       requiresVerification: true,
       user: {
-        id: newUser.id,
-        name: newUser.name,
-        username: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        role: newUser.role,
+        id: targetUser.id,
+        name: targetUser.name,
+        username: targetUser.name,
+        email: targetUser.email,
+        phone: targetUser.phone,
+        role: targetUser.role,
         email_verified: false,
       },
     });
@@ -410,6 +440,7 @@ const resendVerification = async (req, res, next) => {
         token,
       });
     } catch (emailErr) {
+      console.error(`[ResendVerification] Verification email failed for ${cleanEmail}:`, emailErr.message);
       return res.status(500).json({
         success: false,
         error: 'Failed to send verification email. Please check your email configuration and try again.',
@@ -536,6 +567,30 @@ const getMe = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/auth/smtp-status
+ * Diagnostics endpoint: Returns SMTP configuration and verification status without leaking credentials.
+ */
+const getSmtpStatus = async (_req, res) => {
+  try {
+    const result = await emailService.verifySmtpConnection();
+    return res.status(result.success ? 200 : (result.configured ? 502 : 200)).json({
+      success: result.success,
+      configured: result.configured,
+      missing: result.missing || [],
+      errorCode: result.errorCode || null,
+      message: result.message,
+      advice: result.advice || null,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      configured: false,
+      message: `Failed to check SMTP status: ${err.message}`,
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -543,5 +598,6 @@ module.exports = {
   getMe,
   verifyEmail,
   resendVerification,
+  getSmtpStatus,
 };
 

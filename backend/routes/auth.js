@@ -7,6 +7,7 @@ const {
   getMe,
   verifyEmail,
   resendVerification,
+  getSmtpStatus,
 } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const {
@@ -15,6 +16,9 @@ const {
   verifyEmailLimiter,
   resendVerificationLimiter,
 } = require('../middleware/rateLimiter');
+
+// GET /api/auth/smtp-status (controlled SMTP diagnostic status)
+router.get('/smtp-status', getSmtpStatus);
 
 // POST /api/auth/register
 router.post('/register', registerLimiter, register);

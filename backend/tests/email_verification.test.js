@@ -429,4 +429,55 @@ describe('Email Verification via Gmail Suite (All 14 Required Test Cases)', () =
     expect(healthRes.status).toBe(200);
     expect(healthRes.body.status).toBe('ok');
   });
+
+  // ── Case 15: SMTP Status Diagnostics Endpoint ─────────────────────────────
+  test('Case 15: GET /api/auth/smtp-status reports status without exposing secret passwords', async () => {
+    const res = await request(app).get('/api/auth/smtp-status');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('configured');
+    expect(res.body).toHaveProperty('message');
+    // Ensure passwords or raw secrets are never in the response payload
+    const bodyStr = JSON.stringify(res.body);
+    expect(bodyStr).not.toContain('your_16_character_google_app_password');
+    expect(bodyStr).not.toContain('foodbridge_super_secret');
+  });
+
+  // ── Case 16: Retrying unverified registration safely reuses the account ─────
+  test('Case 16: Retrying unverified registration with same phone/email does not create duplicate accounts', async () => {
+    // 1. Initial registration
+    const firstRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        username: 'RetryUser',
+        email: 'retry.user@gmail.com',
+        phone: '9871112222',
+        password: 'Password@123',
+        confirmPassword: 'Password@123',
+        role: 'donor',
+      });
+    expect(firstRes.status).toBe(201);
+
+    const usersBefore = mockStore.getUsers().filter((u) => u.email === 'retry.user@gmail.com');
+    expect(usersBefore.length).toBe(1);
+
+    // 2. Retry registration with same email and phone
+    const retryRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        username: 'RetryUserRenamed',
+        email: 'retry.user@gmail.com',
+        phone: '9871112222',
+        password: 'NewPassword@123',
+        confirmPassword: 'NewPassword@123',
+        role: 'donor',
+      });
+    expect(retryRes.status).toBe(201);
+    expect(retryRes.body.requiresVerification).toBe(true);
+
+    // Confirm no duplicate was created
+    const usersAfter = mockStore.getUsers().filter((u) => u.email === 'retry.user@gmail.com');
+    expect(usersAfter.length).toBe(1);
+    expect(usersAfter[0].id).toBe(usersBefore[0].id);
+    expect(usersAfter[0].name).toBe('RetryUserRenamed');
+  });
 });

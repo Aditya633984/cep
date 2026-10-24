@@ -165,6 +165,21 @@ class MockDataStore {
     return false;
   }
 
+  updateUser(id, updates = {}) {
+    const numId = Number(id);
+    const u = this.users.find((user) => user.id === numId);
+    if (!u) return null;
+    if (updates.name !== undefined) u.name = String(updates.name).trim();
+    if (updates.username !== undefined) u.username = String(updates.username).trim();
+    if (updates.phone !== undefined) u.phone = updates.phone ? String(updates.phone).trim() : null;
+    if (updates.password !== undefined) u.password = updates.password;
+    if (updates.role !== undefined) u.role = updates.role;
+    if (updates.email_verified !== undefined) u.email_verified = Boolean(updates.email_verified);
+    if (updates.email_verified_at !== undefined) u.email_verified_at = updates.email_verified_at;
+    this.saveToCache();
+    return clone(u);
+  }
+
   markUserEmailVerified(userId) {
     const numId = Number(userId);
     const u = this.users.find((user) => user.id === numId);

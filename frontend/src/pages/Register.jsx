@@ -274,12 +274,13 @@ export default function Register() {
 
       if (!res.ok) {
         const errorMsg = data.error || 'Registration failed. Please try again.';
+        console.error('[Register] Backend error:', errorMsg);
         setServerError(errorMsg);
 
         // Highlight specific field if duplicate error returned
-        if (errorMsg.toLowerCase().includes('email')) {
+        if (errorMsg.toLowerCase().includes('already exists') && errorMsg.toLowerCase().includes('email')) {
           setErrors((prev) => ({ ...prev, email: errorMsg }));
-        } else if (errorMsg.toLowerCase().includes('phone')) {
+        } else if (errorMsg.toLowerCase().includes('already exists') && errorMsg.toLowerCase().includes('phone')) {
           setErrors((prev) => ({ ...prev, phone: errorMsg }));
         }
         return;
@@ -303,7 +304,8 @@ export default function Register() {
           navigate(ROLE_DASHBOARD[data.user.role] || '/', { replace: true });
         }, 1200);
       }
-    } catch {
+    } catch (err) {
+      console.error('[Register] Network request failed:', err);
       setServerError('Network error. Is the server running?');
     } finally {
       setLoading(false);
@@ -452,7 +454,18 @@ export default function Register() {
                 {/* Error Banner */}
                 {serverError && (
                   <div className="auth-error" role="alert">
-                    <span>⚠️</span> {serverError}
+                    <span>⚠️</span>
+                    <div>
+                      {serverError}
+                      {serverError.toLowerCase().includes('verification email') && (
+                        <div style={{ marginTop: '0.4rem', fontSize: '0.9em' }}>
+                          If you already registered, you can{' '}
+                          <Link to="/verify-email" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}>
+                            resend verification email here
+                          </Link>.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

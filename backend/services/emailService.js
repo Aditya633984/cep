@@ -5,10 +5,17 @@
  * Sends transactional emails via Gmail SMTP using Nodemailer.
  * Enforces:
  * - Real Gmail SMTP delivery using Google App Passwords
- * - Clean, responsive HTML template + plaintext fallback
+ * - Clean, responsive HTML template matching Step 5 specification + plaintext fallback
  * - Secure error handling without leaking credentials or tokens
  * - Verification URL linking to FoodBridge frontend
  */
+
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Ensure environment variables are loaded regardless of execution context or CWD
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const nodemailer = require('nodemailer');
 
@@ -20,8 +27,99 @@ let customTransporter = null;
  * Returns the effective base URL of the frontend application.
  */
 function getAppBaseUrl() {
-  const url = process.env.APP_BASE_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+  const url = process.env.APP_BASE_URL || process.env.CLIENT_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173');
   return url.replace(/\/+$/, '');
+}
+
+/**
+ * Analyzes current SMTP configuration and checks for missing or placeholder credentials.
+ * Never exposes passwords or secret values.
+ *
+ * @returns {{
+ *   host: string,
+ *   port: number,
+ *   secure: boolean,
+ *   user: string,
+ *   pass: string,
+ *   isConfigured: boolean,
+ *   missing: string[]
+ * }}
+ */
+function isPlaceholderValue(val, type) {
+  if (!val || typeof val !== 'string') return true;
+  const s = val.trim().toLowerCase();
+  if (type === 'user') {
+    if (!s.includes('@')) return true;
+    return (
+      s.includes('your_project_email') ||
+      s.includes('your_project_gmail') ||
+      s.includes('your_email') ||
+      s.includes('your_gmail') ||
+      s.includes('example.com') ||
+      s.startsWith('your_')
+    );
+  }
+  if (type === 'pass') {
+    const cleanPass = s.replace(/\s+/g, '');
+    if (cleanPass.length < 8) return true;
+    return (
+      cleanPass.includes('your_16_character') ||
+      cleanPass.includes('your_google_app_password') ||
+      cleanPass.includes('your_app_password') ||
+      cleanPass.includes('your_password') ||
+      cleanPass.startsWith('your_')
+    );
+  }
+  return false;
+}
+
+/**
+ * Analyzes current SMTP configuration and checks for missing or placeholder credentials.
+ * Never exposes passwords or secret values.
+ *
+ * @returns {{
+ *   host: string,
+ *   port: number,
+ *   secure: boolean,
+ *   user: string,
+ *   pass: string,
+ *   isConfigured: boolean,
+ *   missing: string[]
+ * }}
+ */
+function getSmtpStatus() {
+  const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+  const rawUser = process.env.SMTP_USER || '';
+  const rawPass = process.env.SMTP_PASS || '';
+
+  const user = rawUser.trim();
+  const pass = rawPass.replace(/\s+/g, ''); // Google App Passwords frequently copy with spaces
+
+  const missing = [];
+
+  const isUserValid = Boolean(user && !isPlaceholderValue(user, 'user'));
+  const isPassValid = Boolean(pass && !isPlaceholderValue(pass, 'pass'));
+
+  if (!isUserValid) {
+    missing.push('SMTP_USER');
+  }
+  if (!isPassValid) {
+    missing.push('SMTP_PASS');
+  }
+
+  const isConfigured = isUserValid && isPassValid;
+
+  return {
+    host,
+    port,
+    secure,
+    user,
+    pass,
+    isConfigured,
+    missing,
+  };
 }
 
 /**
@@ -32,53 +130,56 @@ function createTransporter() {
     return customTransporter;
   }
 
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/\s+/g, '') : '';
+  const status = getSmtpStatus();
 
   // In test mode without credentials configured, use a mock transporter that records dispatch
-  if (process.env.NODE_ENV === 'test' && (!user || user.includes('your_project_email'))) {
+  if (process.env.NODE_ENV === 'test' && !status.isConfigured) {
     return {
       sendMail: async (mailOptions) => {
         lastSentEmail = { ...mailOptions, sentAt: new Date() };
-        return { messageId: `<mock-${Date.now()}@foodbridge.org>`, response: '250 Mock email accepted' };
+        return {
+          messageId: `<mock-${Date.now()}@foodbridge.org>`,
+          response: '250 Mock email accepted',
+          accepted: [mailOptions.to],
+          rejected: [],
+        };
       },
       verify: async () => true,
     };
   }
 
-  const options = {
-    host,
-    port,
-    secure,
+  const isSecure = status.secure || status.port === 465;
+
+  const transportOptions = {
+    host: status.host,
+    port: status.port,
+    secure: isSecure, // true for 465, false for 587
     auth: {
-      user,
-      pass,
+      user: status.user,
+      pass: status.pass,
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    requireTLS: !isSecure, // Enforce STARTTLS on port 587
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
     tls: {
       rejectUnauthorized: process.env.NODE_ENV === 'production',
+      minVersion: 'TLSv1.2',
     },
   };
 
-  if (host === 'smtp.gmail.com') {
-    options.service = 'gmail';
-  }
-
-  return nodemailer.createTransport(options);
+  return nodemailer.createTransport(transportOptions);
 }
 
 /**
- * Generates the responsive HTML verification email body.
+ * Generates the responsive HTML verification email body strictly matching Step 5.
  * @param {string} username
  * @param {string} verificationUrl
  * @returns {string}
  */
 function generateVerificationHtml(username, verificationUrl) {
+  const greeting = username && username !== 'there' ? `Hello ${username},` : 'Hello,';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -94,10 +195,10 @@ function generateVerificationHtml(username, verificationUrl) {
           
           <!-- Header Banner -->
           <tr>
-            <td style="background: linear-gradient(135deg, #16a34a 0%, #2563eb 100%); padding: 32px 28px; text-align: center;">
-              <span style="font-size: 36px; display: block; margin-bottom: 8px;">🌉</span>
-              <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em;">FoodBridge</h1>
-              <p style="color: #e2e8f0; margin: 6px 0 0; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 500;">
+            <td style="background: linear-gradient(135deg, #16a34a 0%, #2563eb 100%); padding: 28px 24px; text-align: center;">
+              <span style="font-size: 32px; display: block; margin-bottom: 6px;">🌉</span>
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em;">FoodBridge</h1>
+              <p style="color: #e2e8f0; margin: 4px 0 0; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 500;">
                 Food Donation &amp; Redistribution Platform
               </p>
             </td>
@@ -105,15 +206,15 @@ function generateVerificationHtml(username, verificationUrl) {
 
           <!-- Main Body -->
           <tr>
-            <td style="padding: 36px 32px 24px;">
-              <p style="font-size: 16px; margin: 0 0 16px; font-weight: 600; color: #0f172a;">Hello ${username},</p>
+            <td style="padding: 32px 28px 24px;">
+              <p style="font-size: 16px; margin: 0 0 16px; font-weight: 600; color: #0f172a;">${greeting}</p>
               
               <p style="font-size: 15px; margin: 0 0 16px; color: #334155;">
                 Welcome to FoodBridge!
               </p>
               
               <p style="font-size: 15px; margin: 0 0 24px; color: #334155; line-height: 1.6;">
-                Thank you for joining our food donation and redistribution platform. To complete your registration, please verify your email address by clicking the button below.
+                Please verify your email address by clicking the button below.
               </p>
 
               <!-- Verification Button -->
@@ -138,23 +239,22 @@ function generateVerificationHtml(username, verificationUrl) {
 
               <div style="background-color: #f1f5f9; border-left: 4px solid #2563eb; padding: 12px 16px; border-radius: 4px; margin: 22px 0;">
                 <p style="font-size: 13px; color: #475569; margin: 0; font-weight: 500;">
-                  ⏳ This link will expire in 15 minutes.
+                  ⏳ This verification link expires in 15 minutes.
                 </p>
               </div>
 
               <p style="font-size: 13px; color: #94a3b8; margin: 24px 0 0;">
-                If you did not create a FoodBridge account, you can safely ignore this email.
+                If you did not register for FoodBridge, you can ignore this email.
               </p>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 32px 32px; border-top: 1px solid #f1f5f9; background-color: #fafafa;">
+            <td style="padding: 20px 28px 28px; border-top: 1px solid #f1f5f9; background-color: #fafafa;">
               <p style="font-size: 14px; margin: 0; color: #475569; line-height: 1.6;">
                 Regards,<br>
-                <strong style="color: #1e293b;">FoodBridge Team</strong><br>
-                <span style="font-size: 12px; color: #64748b;">Connecting Surplus Food with Those Who Need It.</span>
+                <strong style="color: #1e293b;">FoodBridge Team</strong>
               </p>
             </td>
           </tr>
@@ -167,31 +267,31 @@ function generateVerificationHtml(username, verificationUrl) {
 }
 
 /**
- * Generates the plaintext alternative email body.
+ * Generates the plaintext alternative email body strictly matching Step 5.
  * @param {string} username
  * @param {string} verificationUrl
  * @returns {string}
  */
 function generateVerificationText(username, verificationUrl) {
-  return `Hello ${username},
+  const greeting = username && username !== 'there' ? `Hello ${username},` : 'Hello,';
+
+  return `${greeting}
 
 Welcome to FoodBridge!
 
-Thank you for joining our food donation and redistribution platform. To complete your registration, please verify your email address by clicking the button below.
+Please verify your email address by clicking the button below.
 
 [Verify My Email]
 
 If the button does not work, copy and paste this link into your browser:
-
 ${verificationUrl}
 
-This link will expire in 15 minutes.
+This verification link expires in 15 minutes.
 
-If you did not create a FoodBridge account, you can safely ignore this email.
+If you did not register for FoodBridge, you can ignore this email.
 
 Regards,
-FoodBridge Team
-Connecting Surplus Food with Those Who Need It.`;
+FoodBridge Team`;
 }
 
 /**
@@ -213,12 +313,21 @@ async function sendVerificationEmail({ to, username, token }) {
   }
 
   const cleanRecipient = to.trim().toLowerCase();
-  const cleanUsername = (username || 'there').trim();
+  const cleanUsername = (username || '').trim();
   const appBaseUrl = getAppBaseUrl();
   const verificationUrl = `${appBaseUrl}/verify-email?token=${encodeURIComponent(token)}`;
 
+  const status = getSmtpStatus();
+
+  // Fail fast if required SMTP credentials are missing/placeholder in non-test mode
+  if (!status.isConfigured && process.env.NODE_ENV !== 'test' && !customTransporter) {
+    const errorMsg = `SMTP credentials are not configured (missing: ${status.missing.join(', ')}). Please set SMTP_USER and SMTP_PASS (Google App Password) in your .env file.`;
+    console.error(`[EmailService] Cannot send verification email to ${cleanRecipient}: ${errorMsg}`);
+    throw new Error(errorMsg);
+  }
+
   const transporter = createTransporter();
-  const senderEmail = process.env.SMTP_USER || 'no-reply@foodbridge.org';
+  const senderEmail = status.user || 'no-reply@foodbridge.org';
   const from = `"FoodBridge" <${senderEmail}>`;
 
   const mailOptions = {
@@ -231,6 +340,18 @@ async function sendVerificationEmail({ to, username, token }) {
 
   try {
     const info = await transporter.sendMail(mailOptions);
+
+    // Enforce delivery confirmation
+    if (info && info.rejected && info.rejected.length > 0) {
+      const rejectedList = info.rejected.join(', ');
+      console.error(`[EmailService] Recipient rejected by SMTP server: ${rejectedList}`);
+      throw new Error(`Email recipient rejected by SMTP server: ${rejectedList}`);
+    }
+
+    if (!info || (!info.messageId && (!info.accepted || info.accepted.length === 0))) {
+      throw new Error('SMTP server did not confirm message acceptance.');
+    }
+
     lastSentEmail = {
       to: cleanRecipient,
       from,
@@ -241,7 +362,7 @@ async function sendVerificationEmail({ to, username, token }) {
     };
     return info;
   } catch (err) {
-    // Never leak passwords or sensitive tokens in error logs
+    // Log safe diagnostic error on the backend without leaking passwords or verification tokens
     console.error(`[EmailService] Failed to send email to ${cleanRecipient}:`, err.message);
     throw new Error(`Email delivery failed: ${err.message}`);
   }
@@ -249,18 +370,65 @@ async function sendVerificationEmail({ to, username, token }) {
 
 /**
  * Verifies SMTP connection configuration without sending an email.
- * @returns {Promise<{ success: boolean, message: string }>}
+ * Runs transporter.verify() and reports actual error code and diagnostic details.
+ * @returns {Promise<{
+ *   success: boolean,
+ *   configured: boolean,
+ *   missing: string[],
+ *   errorCode?: string,
+ *   errorResponse?: string|null,
+ *   message: string,
+ *   advice?: string
+ * }>}
  */
 async function verifySmtpConnection() {
+  const status = getSmtpStatus();
+
+  // Test mode without credentials configured: return mock success
+  if (process.env.NODE_ENV === 'test' && !status.isConfigured && !customTransporter) {
+    return {
+      success: true,
+      configured: false,
+      missing: status.missing,
+      message: 'Test mode active with mock SMTP transporter.',
+    };
+  }
+
   try {
     const transporter = createTransporter();
     if (typeof transporter.verify === 'function') {
       await transporter.verify();
-      return { success: true, message: 'SMTP server connection verified successfully.' };
+      return {
+        success: true,
+        configured: status.isConfigured,
+        missing: [],
+        message: 'Gmail SMTP connection verified successfully! Ready to deliver verification emails.',
+      };
     }
-    return { success: true, message: 'Mock SMTP transporter active.' };
+    return { success: true, configured: true, missing: [], message: 'Custom/mock SMTP transporter active.' };
   } catch (err) {
-    return { success: false, message: `SMTP connection error: ${err.message}` };
+    const errorCode = err.code || 'UNKNOWN';
+    const errorResponse = err.response || null;
+    let diagnosticAdvice = '';
+
+    if (errorCode === 'EAUTH' || (err.message && err.message.includes('535'))) {
+      diagnosticAdvice = 'Gmail rejected authentication (535 BadCredentials). Ensure 2-Step Verification is ON and generate a 16-character Google App Password (not your personal password).';
+    } else if (errorCode === 'ETIMEDOUT' || errorCode === 'ECONNREFUSED') {
+      diagnosticAdvice = `Connection to ${status.host}:${status.port} timed out or was refused. Check your internet connection or firewall. You can try SMTP_PORT=465 and SMTP_SECURE=true.`;
+    }
+
+    const result = {
+      success: false,
+      configured: status.isConfigured,
+      missing: status.missing,
+      errorCode,
+      errorResponse,
+      message: err.message,
+      advice: diagnosticAdvice,
+    };
+
+    console.error(`[SMTP Diagnostic] transporter.verify() failed: [${errorCode}] ${err.message}`);
+    return result;
   }
 }
 
@@ -286,6 +454,7 @@ function resetTransporter() {
 
 module.exports = {
   getAppBaseUrl,
+  getSmtpStatus,
   createTransporter,
   sendVerificationEmail,
   verifySmtpConnection,
