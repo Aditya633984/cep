@@ -77,10 +77,9 @@ async function runTests() {
   // 7. Register new user (Email Verification Flow)
   const randomEmail = `newuser${Date.now()}@gmail.com`;
   const randomPhone = '9' + String(Date.now()).slice(-9);
-  let verificationToken = '';
   let newUserToken = '';
 
-  await test('POST /api/auth/register creates unverified account and sends verification email', async () => {
+  await test('POST /api/auth/register creates verified account immediately without email verification', async () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({
@@ -90,41 +89,20 @@ async function runTests() {
         password: 'Password@123',
         role: 'donor',
       });
-    if (res.status !== 201 || !res.body.requiresVerification) {
+    if (res.status !== 201 || !res.body.token) {
       throw new Error(res.body.error || 'Registration failed');
     }
-    const lastEmail = emailService.getLastSentEmail();
-    if (!lastEmail) throw new Error('Verification email was not dispatched');
-    verificationToken = new URL(lastEmail.verificationUrl).searchParams.get('token');
+    newUserToken = res.body.token;
   });
 
-  // 7b. Attempt login before verification
-  await test('POST /api/auth/login rejects unverified user with 403', async () => {
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({ email: randomEmail, password: 'Password@123' });
-    if (res.status !== 403 || !res.body.requiresVerification) {
-      throw new Error(`Expected 403 with requiresVerification but got ${res.status}`);
-    }
-  });
-
-  // 7c. Verify email with token
-  await test('GET /api/auth/verify-email validates token and marks user verified', async () => {
-    const res = await request(app).get(`/api/auth/verify-email?token=${verificationToken}`);
-    if (res.status !== 200 || !res.body.success) {
-      throw new Error(res.body.error || 'Email verification failed');
-    }
-  });
-
-  // 7d. Log in after email verification
-  await test('POST /api/auth/login logs in newly verified user successfully', async () => {
+  // 7b. Immediate login after registration
+  await test('POST /api/auth/login logs in user immediately without email verification', async () => {
     const res = await request(app)
       .post('/api/auth/login')
       .send({ email: randomEmail, password: 'Password@123' });
     if (res.status !== 200 || !res.body.token) {
-      throw new Error(res.body.error || 'Login failed after verification');
+      throw new Error(res.body.error || 'Immediate login failed');
     }
-    newUserToken = res.body.token;
   });
 
   // 8. Reject duplicate email

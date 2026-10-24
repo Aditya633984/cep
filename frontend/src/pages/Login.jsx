@@ -22,23 +22,6 @@ export default function Login() {
   const [serverError,  setServerError]  = useState('');
   const [loading,      setLoading]      = useState(false);
 
-  // Email verification pending state
-  const [isPendingVerification, setIsPendingVerification] = useState(false);
-  const [unverifiedEmail,       setUnverifiedEmail]       = useState('');
-  const [resendLoading,         setResendLoading]         = useState(false);
-  const [resendSuccess,         setResendSuccess]         = useState('');
-  const [resendError,           setResendError]           = useState('');
-  const [resendCooldown,        setResendCooldown]        = useState(0);
-
-  // Cooldown countdown timer for resend button
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const interval = setInterval(() => {
-      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [resendCooldown]);
-
   const validateField = (name, value) => {
     switch (name) {
       case 'email': {
@@ -65,8 +48,6 @@ export default function Login() {
     setFormData(updated);
 
     if (serverError) setServerError('');
-    if (resendError) setResendError('');
-    if (resendSuccess) setResendSuccess('');
 
     if (touched[name]) {
       const err = validateField(name, value);
@@ -81,43 +62,9 @@ export default function Login() {
     setErrors((prev) => ({ ...prev, [name]: err }));
   };
 
-  const handleResendVerification = async () => {
-    const targetEmail = unverifiedEmail || formData.email.trim();
-    if (!targetEmail) {
-      setResendError('Please enter your Gmail address above to receive a verification email.');
-      return;
-    }
-
-    setResendError('');
-    setResendSuccess('');
-    setResendLoading(true);
-
-    try {
-      const res = await fetch(`${BASE_URL}/auth/resend-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: targetEmail }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setResendError(data.error || 'Failed to resend verification email.');
-      } else {
-        setResendSuccess('A new verification email has been sent to your Gmail address.');
-        setResendCooldown(45);
-      }
-    } catch {
-      setResendError('Network error. Is the server running?');
-    } finally {
-      setResendLoading(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setServerError('');
-    setResendSuccess('');
-    setResendError('');
 
     const newTouched = { email: true, password: true };
     setTouched(newTouched);
@@ -156,16 +103,10 @@ export default function Login() {
       }
 
       if (!res.ok) {
-        if (data.requiresVerification) {
-          setIsPendingVerification(true);
-          setUnverifiedEmail(formData.email.trim());
-        }
         let errorMsg = data.error;
         if (!errorMsg) {
-          if (res.status === 401) {
+          if (res.status === 401 || res.status === 403) {
             errorMsg = 'Invalid email or password.';
-          } else if (res.status === 403) {
-            errorMsg = 'Please verify your email before logging in. Check your inbox for the verification link.';
           } else if (res.status === 502 || res.status === 503 || res.status === 504) {
             errorMsg = 'Backend server is temporarily unreachable. Please try again shortly.';
           } else {
@@ -213,39 +154,6 @@ export default function Login() {
             {serverError && (
               <div className="auth-error" role="alert">
                 <span>⚠️</span> {serverError}
-              </div>
-            )}
-
-            {/* Verification Pending Resend Box */}
-            {isPendingVerification && (
-              <div className="resend-box-card" style={{ marginBottom: '1.25rem' }}>
-                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' }}>
-                  Didn't receive the verification email{unverifiedEmail ? ` for ${unverifiedEmail}` : ''}? Check your Spam folder or request a new link:
-                </p>
-                {resendSuccess && (
-                  <div className="auth-success" role="status" style={{ marginBottom: 'var(--space-2)' }}>
-                    <span>✅</span> {resendSuccess}
-                  </div>
-                )}
-                {resendError && (
-                  <div className="auth-error" role="alert" style={{ marginBottom: 'var(--space-2)' }}>
-                    <span>⚠️</span> {resendError}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  id="resend-verification-login-btn"
-                  className="btn-secondary-outline"
-                  style={{ width: '100%', fontSize: 'var(--font-size-xs)', padding: '0.6rem 0.75rem' }}
-                  onClick={handleResendVerification}
-                  disabled={resendLoading || resendCooldown > 0}
-                >
-                  {resendLoading
-                    ? 'Sending Email…'
-                    : resendCooldown > 0
-                    ? `Resend Email in ${resendCooldown}s`
-                    : 'Resend Verification Email'}
-                </button>
               </div>
             )}
 

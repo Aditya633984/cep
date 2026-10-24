@@ -53,21 +53,6 @@ export default function Register() {
   const [serverError,           setServerError]           = useState('');
   const [successMsg,            setSuccessMsg]            = useState('');
   const [loading,               setLoading]               = useState(false);
-  const [isPendingVerification, setIsPendingVerification] = useState(false);
-  const [registeredEmail,       setRegisteredEmail]       = useState('');
-  const [resendLoading,         setResendLoading]         = useState(false);
-  const [resendSuccess,         setResendSuccess]         = useState('');
-  const [resendError,           setResendError]           = useState('');
-  const [resendCooldown,        setResendCooldown]        = useState(0);
-
-  // Countdown timer for resend button cooldown
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const interval = setInterval(() => {
-      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [resendCooldown]);
 
   // ── Validation Helper ───────────────────────────────────────────────────────
   const validateField = (name, value, allData) => {
@@ -323,24 +308,15 @@ export default function Register() {
         return;
       }
 
-      // If email verification is required (standard workflow)
-      if (data.requiresVerification) {
-        setRegisteredEmail(formData.email.trim());
-        setIsPendingVerification(true);
-        setSuccessMsg(
-          'A verification email has been sent to your Gmail address. Please check your inbox and click the verification link to verify your account.'
-        );
-        return;
-      }
-
-      // Pre-verified accounts fallback
-      if (data.token) {
-        setSuccessMsg('Registration successful! Welcome to FoodBridge. Redirecting to your dashboard…');
-        setTimeout(() => {
+      setSuccessMsg('Registration successful! Welcome to FoodBridge. Redirecting to your dashboard…');
+      setTimeout(() => {
+        if (data.token && data.user) {
           login(data.token, data.user);
           navigate(ROLE_DASHBOARD[data.user.role] || '/', { replace: true });
-        }, 1200);
-      }
+        } else {
+          navigate('/login', { replace: true });
+        }
+      }, 1000);
     } catch (err) {
       console.error('[Register] Network request failed:', err);
       if (err.name === 'AbortError') {
@@ -355,133 +331,20 @@ export default function Register() {
     }
   };
 
-  const handleResendVerification = async () => {
-    setResendError('');
-    setResendSuccess('');
-    setResendLoading(true);
-
-    try {
-      const res = await fetch(`${BASE_URL}/auth/resend-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: registeredEmail }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setResendError(data.error || 'Failed to resend verification email.');
-      } else {
-        setResendSuccess('A new verification email has been sent to your Gmail address.');
-        setResendCooldown(45);
-      }
-    } catch {
-      setResendError('Network error. Is the server running?');
-    } finally {
-      setResendLoading(false);
-    }
-  };
-
   const isNgo = formData.role === 'ngo';
   const isVolunteer = formData.role === 'volunteer';
 
   return (
     <main id="main-content" className="auth-page" style={{ alignItems: 'flex-start', paddingTop: '2.5rem' }}>
       <div className="auth-container" style={{ maxWidth: '520px' }}>
-
-        {isPendingVerification ? (
-          /* ── Verification Pending View ───────────────────────────────── */
-          <div>
-            <div className="auth-header">
-              <div className="auth-header__icon" aria-hidden="true">🌉</div>
-              <h1 className="auth-header__title">Verify Your Gmail Address</h1>
-              <p className="auth-header__subtitle">
-                One final step to complete your FoodBridge registration.
-              </p>
-            </div>
-
-            <div className="auth-card verification-card">
-              <div className="verification-status-icon verification-status-icon--pending" aria-hidden="true">
-                ✉️
-              </div>
-
-              <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
-                Check Your Inbox
-              </h2>
-
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', lineHeight: 1.6, marginBottom: 'var(--space-4)' }}>
-                A verification email has been sent to your Gmail address. Please check your inbox and click the verification link to verify your account.
-              </p>
-
-              <div className="verification-email-badge">
-                <span>📧</span>
-                <span>{registeredEmail}</span>
-              </div>
-
-              <div className="verification-notice">
-                <strong>Important:</strong> The verification link will expire in <strong>15 minutes</strong>. If you do not see the email, please check your Spam or Promotions folder.
-              </div>
-
-              {resendSuccess && (
-                <div className="auth-success" role="status">
-                  <span>✅</span> {resendSuccess}
-                </div>
-              )}
-
-              {resendError && (
-                <div className="auth-error" role="alert">
-                  <span>⚠️</span> {resendError}
-                </div>
-              )}
-
-              <div className="verification-actions">
-                <button
-                  type="button"
-                  id="resend-verification-btn"
-                  className="btn btn-primary"
-                  onClick={handleResendVerification}
-                  disabled={resendLoading || resendCooldown > 0}
-                >
-                  {resendLoading
-                    ? 'Sending Email…'
-                    : resendCooldown > 0
-                    ? `Resend Email in ${resendCooldown}s`
-                    : 'Resend Verification Email'}
-                </button>
-
-                <Link to="/login" className="btn-secondary-outline">
-                  Back to Login
-                </Link>
-
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => setIsPendingVerification(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--color-primary)',
-                    fontSize: 'var(--font-size-sm)',
-                    cursor: 'pointer',
-                    marginTop: 'var(--space-3)',
-                    textDecoration: 'underline',
-                  }}
-                >
-                  Entered the wrong email? Change registration details
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* ── Normal Registration Form ────────────────────────────────── */
-          <div>
-            {/* Header */}
-            <div className="auth-header">
-              <div className="auth-header__icon" aria-hidden="true">🌉</div>
-              <h1 className="auth-header__title">Create Your Account</h1>
-              <p className="auth-header__subtitle">
-                Join FoodBridge and start making an impact in your community.
-              </p>
-            </div>
+        {/* Header */}
+        <div className="auth-header">
+          <div className="auth-header__icon" aria-hidden="true">🌉</div>
+          <h1 className="auth-header__title">Create Your Account</h1>
+          <p className="auth-header__subtitle">
+            Join FoodBridge and start making an impact in your community.
+          </p>
+        </div>
 
             {/* Card */}
             <div className="auth-card">
@@ -498,17 +361,7 @@ export default function Register() {
                 {serverError && (
                   <div className="auth-error" role="alert">
                     <span>⚠️</span>
-                    <div>
-                      {serverError}
-                      {serverError.toLowerCase().includes('verification email') && (
-                        <div style={{ marginTop: '0.4rem', fontSize: '0.9em' }}>
-                          If you already registered, you can{' '}
-                          <Link to="/verify-email" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}>
-                            resend verification email here
-                          </Link>.
-                        </div>
-                      )}
-                    </div>
+                    <div>{serverError}</div>
                   </div>
                 )}
 
@@ -852,8 +705,6 @@ export default function Register() {
           Already have an account?{' '}
           <Link to="/login">Log in here</Link>
         </p>
-      </div>
-        )}
       </div>
     </main>
   );

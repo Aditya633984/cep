@@ -47,10 +47,14 @@ class MockDataStore {
         const parsed = JSON.parse(raw);
         if (parsed.users && parsed.donations) {
           this.users                  = parsed.users;
+          // Ensure all existing cached users can log in without verification requirements
+          this.users.forEach((u) => {
+            u.email_verified = true;
+          });
           this.ngoProfiles            = parsed.ngoProfiles || this.ngoProfiles;
           this.volunteerProfiles      = parsed.volunteerProfiles || this.volunteerProfiles;
           this.donations              = parsed.donations;
-          this.verificationTokens     = parsed.verificationTokens || [];
+          this.verificationTokens     = [];
           this.nextUserId             = parsed.nextUserId || 100;
           this.nextDonationId         = parsed.nextDonationId || 100;
           this.nextVerificationTokenId = parsed.nextVerificationTokenId || 1;
@@ -124,9 +128,8 @@ class MockDataStore {
     return clone(
       this.users.find(
         (u) =>
-          u.email_verified &&
-          ((u.username && String(u.username).trim().toLowerCase() === clean) ||
-            (u.name && String(u.name).trim().toLowerCase() === clean))
+          (u.username && String(u.username).trim().toLowerCase() === clean) ||
+          (u.name && String(u.name).trim().toLowerCase() === clean)
       ) || null
     );
   }
@@ -155,8 +158,8 @@ class MockDataStore {
       phone: cleanPhone,
       password: userData.password, // already hashed
       role: userData.role,
-      email_verified: Boolean(userData.email_verified),
-      email_verified_at: userData.email_verified_at || null,
+      email_verified: true,
+      email_verified_at: userData.email_verified_at || new Date().toISOString(),
       created_at: new Date().toISOString(),
     };
     this.users.push(newUser);

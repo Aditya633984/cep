@@ -29,7 +29,7 @@ describe('Authentication & Authorization Suite', () => {
 
         expect(res.status).toBe(201);
         expect(res.body.success).toBe(true);
-        expect(res.body.requiresVerification).toBe(true);
+        expect(res.body.token).toBeDefined();
         expect(res.body.user.name).toBe(username);
       }
     });
@@ -168,14 +168,15 @@ describe('Authentication & Authorization Suite', () => {
         'food.bridge@gmail.com',
         '  trimmed@gmail.com  ', // normalized by trimming
       ];
+      const validNames = ['AdityaUser', 'RahulUser', 'BridgeUser', 'TrimmedUser'];
       let phoneNum = 9811223300;
 
-      for (const email of validEmails) {
+      for (let i = 0; i < validEmails.length; i++) {
         const res = await request(app)
           .post('/api/auth/register')
           .send({
-            username: 'TestUser',
-            email,
+            username: validNames[i],
+            email: validEmails[i],
             phone: String(phoneNum++),
             password: 'securepassword123',
             role: 'donor',
@@ -183,7 +184,7 @@ describe('Authentication & Authorization Suite', () => {
 
         expect(res.status).toBe(201);
         expect(res.body.success).toBe(true);
-        expect(res.body.user.email).toBe(email.trim().toLowerCase());
+        expect(res.body.user.email).toBe(validEmails[i].trim().toLowerCase());
       }
     });
 
@@ -399,35 +400,12 @@ describe('Authentication & Authorization Suite', () => {
 
       expect(regRes.status).toBe(201);
       expect(regRes.body.success).toBe(true);
-      expect(regRes.body.requiresVerification).toBe(true);
+      expect(regRes.body.token).toBeDefined();
       expect(regRes.body.user.name).toBe('Aditya');
       expect(regRes.body.user.email).toBe('aditya@gmail.com');
       expect(regRes.body.user.password).toBeUndefined(); // no password exposed
 
-      // Attempt login before email verification (must be rejected)
-      const unverifiedLogin = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'aditya@gmail.com',
-          password: 'ValidPassword123',
-        });
-
-      expect(unverifiedLogin.status).toBe(403);
-      expect(unverifiedLogin.body.success).toBe(false);
-      expect(unverifiedLogin.body.error).toBe('Please verify your email before logging in. Check your Gmail inbox for the verification link.');
-      expect(unverifiedLogin.body.requiresVerification).toBe(true);
-
-      // Verify email via token
-      const lastEmail = require('../services/emailService').getLastSentEmail();
-      const tokenUrl = new URL(lastEmail.verificationUrl);
-      const token = tokenUrl.searchParams.get('token');
-
-      const verifyRes = await request(app)
-        .get(`/api/auth/verify-email?token=${token}`);
-      expect(verifyRes.status).toBe(200);
-      expect(verifyRes.body.success).toBe(true);
-
-      // Login with valid credentials
+      // Immediately log in with registered credentials (no email verification required)
       const loginRes = await request(app)
         .post('/api/auth/login')
         .send({
@@ -438,6 +416,8 @@ describe('Authentication & Authorization Suite', () => {
       expect(loginRes.status).toBe(200);
       expect(loginRes.body.success).toBe(true);
       expect(loginRes.body.token).toBeDefined();
+      expect(loginRes.body.user.email).toBe('aditya@gmail.com');
+      expect(loginRes.body.user.password).toBeUndefined();
       expect(loginRes.body.user.email).toBe('aditya@gmail.com');
       expect(loginRes.body.user.password).toBeUndefined();
 
@@ -483,7 +463,7 @@ describe('Authentication & Authorization Suite', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.requiresVerification).toBe(true);
+      expect(res.body.token).toBeDefined();
       expect(res.body.user.role).toBe('ngo');
     });
 
@@ -518,7 +498,7 @@ describe('Authentication & Authorization Suite', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.requiresVerification).toBe(true);
+      expect(res.body.token).toBeDefined();
       expect(res.body.user.role).toBe('volunteer');
     });
   });
