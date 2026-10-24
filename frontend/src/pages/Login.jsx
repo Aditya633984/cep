@@ -142,21 +142,51 @@ export default function Login() {
           password: formData.password,
         }),
       });
-      const data = await res.json();
+      let data = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+      } else {
+        const text = await res.text();
+        data = { error: text };
+      }
 
       if (!res.ok) {
         if (data.requiresVerification) {
           setIsPendingVerification(true);
           setUnverifiedEmail(formData.email.trim());
         }
-        setServerError(data.error || 'Invalid email or password.');
+        let errorMsg = data.error;
+        if (!errorMsg) {
+          if (res.status === 401) {
+            errorMsg = 'Invalid email or password.';
+          } else if (res.status === 403) {
+            errorMsg = 'Please verify your email before logging in. Check your inbox for the verification link.';
+          } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+            errorMsg = 'Backend server is temporarily unreachable. Please try again shortly.';
+          } else {
+            errorMsg = `Server error (${res.status}). Please try again.`;
+          }
+        }
+        setServerError(errorMsg);
         return;
       }
 
       login(data.token, data.user);
       navigate(ROLE_DASHBOARD[data.user.role] || '/', { replace: true });
-    } catch {
-      setServerError('Network error. Is the server running?');
+    } catch (err) {
+      console.error('[Login] Request failed:', err);
+      if (err.name === 'AbortError') {
+        setServerError('Login request timed out. Please check your internet connection.');
+      } else if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
+        setServerError('Cannot connect to the FoodBridge API server. Please verify the backend is running and reachable.');
+      } else {
+        setServerError(err.message || 'Unable to connect to the server. Please check your network connection.');
+      }
     } finally {
       setLoading(false);
     }

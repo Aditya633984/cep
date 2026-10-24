@@ -34,6 +34,7 @@ app.use((_req, res, next) => {
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'https://frontend-pi-eight-59.vercel.app',
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
@@ -50,7 +51,13 @@ app.use(cors({
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
+
+// Explicit preflight handler
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 if (process.env.NODE_ENV !== 'test') {
@@ -60,15 +67,34 @@ if (process.env.NODE_ENV !== 'test') {
 // ─── Static uploads ───────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
+// ─── Health check endpoint (always available at /api/health and /health) ─────
+const healthHandler = (_req, res) => {
+  res.status(200).json({
+    success: true,
+    status: 'ok',
+    message: 'FoodBridge API is running',
+    timestamp: new Date().toISOString(),
+  });
+};
+app.get('/api/health', healthHandler);
+app.get('/health', healthHandler);
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api', apiRoutes);
-app.use('/api', donorRoutes);      // donor routes
-app.use('/api', ngoRoutes);        // ngo routes
-app.use('/api', volunteerRoutes);  // volunteer routes
-app.use('/api', matchingRoutes);   // smart matching routes
-app.use('/api', locationRoutes);   // location / geocoding routes
-app.use('/api', adminRoutes);      // admin-only routes
-app.use('/api', dashboardRoutes);
+// Mount routes under both '/api' and '/' to ensure full compatibility
+// with direct Express server, reverse proxies, and serverless rewrites.
+const mountRoutes = (prefix) => {
+  app.use(prefix, apiRoutes);
+  app.use(prefix, donorRoutes);
+  app.use(prefix, ngoRoutes);
+  app.use(prefix, volunteerRoutes);
+  app.use(prefix, matchingRoutes);
+  app.use(prefix, locationRoutes);
+  app.use(prefix, adminRoutes);
+  app.use(prefix, dashboardRoutes);
+};
+
+mountRoutes('/api');
+mountRoutes('/');
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {

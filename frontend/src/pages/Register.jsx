@@ -280,10 +280,35 @@ export default function Register() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(payload),
       });
-      const data = await res.json();
+      let data = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+      } else {
+        const text = await res.text();
+        data = { error: text };
+      }
 
       if (!res.ok) {
-        const errorMsg = data.error || 'Registration failed. Please try again.';
+        let errorMsg = data.error;
+        if (!errorMsg) {
+          if (res.status === 400) {
+            errorMsg = 'Invalid registration data. Please review the highlighted fields.';
+          } else if (res.status === 409) {
+            errorMsg = 'An account with this email, phone, or username already exists.';
+          } else if (res.status === 405) {
+            errorMsg = 'Endpoint method not allowed (HTTP 405). Please verify backend deployment.';
+          } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+            errorMsg = 'Backend server is temporarily unreachable (HTTP ' + res.status + '). Please try again in a moment.';
+          } else {
+            errorMsg = `Server returned error (${res.status}). Please try again.`;
+          }
+        }
+
         console.error('[Register] Backend error:', errorMsg);
         setServerError(errorMsg);
 
@@ -318,7 +343,13 @@ export default function Register() {
       }
     } catch (err) {
       console.error('[Register] Network request failed:', err);
-      setServerError('Network error. Is the server running?');
+      if (err.name === 'AbortError') {
+        setServerError('Registration request timed out. Please check your internet connection.');
+      } else if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
+        setServerError('Cannot connect to the FoodBridge API server. Please verify that the backend is running and reachable.');
+      } else {
+        setServerError(err.message || 'Unable to connect to the server. Please check your network connection.');
+      }
     } finally {
       setLoading(false);
     }
