@@ -11,7 +11,12 @@ export function AuthProvider({ children }) {
   const [user,  setUser]  = useState(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_USER);
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.role) {
+        parsed.role = String(parsed.role).trim().toLowerCase();
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -28,12 +33,65 @@ export function AuthProvider({ children }) {
     }
   }, [token, user]);
 
+  // Synchronize across browser tabs and handle token expiration
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === STORAGE_KEY_TOKEN || e.key === STORAGE_KEY_USER) {
+        const storedToken = localStorage.getItem(STORAGE_KEY_TOKEN);
+        const storedUserRaw = localStorage.getItem(STORAGE_KEY_USER);
+        let storedUser = null;
+        try {
+          storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+          if (storedUser && storedUser.role) {
+            storedUser.role = String(storedUser.role).trim().toLowerCase();
+          }
+        } catch {
+          storedUser = null;
+        }
+        setToken(storedToken);
+        setUser(storedUser);
+      }
+    };
+
+    const handleAuthExpired = (e) => {
+      setToken(null);
+      setUser(null);
+      try {
+        localStorage.removeItem(STORAGE_KEY_TOKEN);
+        localStorage.removeItem(STORAGE_KEY_USER);
+      } catch {}
+
+      const msg = e?.detail?.message || 'Your session has expired. Please log in again.';
+      try {
+        sessionStorage.setItem('fb_session_expired', msg);
+      } catch {}
+
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.replace('/login?expired=1');
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('fb:auth-expired', handleAuthExpired);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('fb:auth-expired', handleAuthExpired);
+    };
+  }, []);
+
   /**
    * Call after a successful login/register API response.
    */
   const login = useCallback((newToken, newUser) => {
+    const normalizedUser = newUser
+      ? {
+          ...newUser,
+          role: newUser.role ? String(newUser.role).trim().toLowerCase() : newUser.role,
+        }
+      : null;
     setToken(newToken);
-    setUser(newUser);
+    setUser(normalizedUser);
   }, []);
 
   /**

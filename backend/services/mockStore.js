@@ -45,18 +45,60 @@ class MockDataStore {
       if (fs.existsSync(cacheFile)) {
         const raw = fs.readFileSync(cacheFile, 'utf8');
         const parsed = JSON.parse(raw);
-        if (parsed.users && parsed.donations) {
-          this.users                  = parsed.users;
-          // Ensure all existing cached users can log in without verification requirements
+        if (parsed.users && Array.isArray(parsed.users)) {
+          // Reserved fixture IDs (1..12)
+          const initialIdSet = new Set(initialUsers.map((u) => u.id));
+          let nextAvailableId = Math.max(parsed.nextUserId || 100, 100);
+
+          // Put initialUsers in userList first
+          const userList = initialUsers.map((u) => clone(u));
+          const existingEmails = new Set(userList.map((u) => u.email.toLowerCase()));
+
+          // Append parsed users that are not already in initialUsers, reassigning conflicting IDs
+          (parsed.users || []).forEach((u) => {
+            if (!u.email || existingEmails.has(u.email.toLowerCase())) return;
+            const userCopy = clone(u);
+            if (initialIdSet.has(userCopy.id) || userCopy.id < 100) {
+              userCopy.id = nextAvailableId++;
+            }
+            existingEmails.add(userCopy.email.toLowerCase());
+            userList.push(userCopy);
+          });
+
+          this.users = userList;
+          this.nextUserId = nextAvailableId;
+
+          // Ensure all users can log in without verification gate and roles are lowercase
           this.users.forEach((u) => {
             u.email_verified = true;
+            if (u.role) u.role = String(u.role).trim().toLowerCase();
           });
-          this.ngoProfiles            = parsed.ngoProfiles || this.ngoProfiles;
-          this.volunteerProfiles      = parsed.volunteerProfiles || this.volunteerProfiles;
-          this.donations              = parsed.donations;
-          this.verificationTokens     = [];
-          this.nextUserId             = parsed.nextUserId || 100;
-          this.nextDonationId         = parsed.nextDonationId || 100;
+
+          // Ensure NGO profiles include fixtures
+          const ngoMap = new Map();
+          initialNgoProfiles.forEach((p) => ngoMap.set(p.user_id, clone(p)));
+          (parsed.ngoProfiles || []).forEach((p) => ngoMap.set(p.user_id, p));
+          this.ngoProfiles = Array.from(ngoMap.values());
+
+          // Ensure Volunteer profiles include fixtures
+          const volMap = new Map();
+          initialVolunteerProfiles.forEach((v) => volMap.set(v.user_id, clone(v)));
+          (parsed.volunteerProfiles || []).forEach((v) => volMap.set(v.user_id, v));
+          this.volunteerProfiles = Array.from(volMap.values());
+
+          // Ensure donations include fixtures if empty
+          if (parsed.donations && parsed.donations.length > 0) {
+            const donationMap = new Map();
+            initialDonations.forEach((d) => donationMap.set(d.id, clone(d)));
+            parsed.donations.forEach((d) => donationMap.set(d.id, d));
+            this.donations = Array.from(donationMap.values());
+          } else {
+            this.donations = clone(initialDonations);
+          }
+
+          this.verificationTokens = [];
+          this.nextUserId = Math.max(parsed.nextUserId || 100, 100);
+          this.nextDonationId = Math.max(parsed.nextDonationId || 100, 100);
           this.nextVerificationTokenId = parsed.nextVerificationTokenId || 1;
         }
       }
@@ -157,7 +199,7 @@ class MockDataStore {
       email: cleanEmail,
       phone: cleanPhone,
       password: userData.password, // already hashed
-      role: userData.role,
+      role: userData.role ? String(userData.role).trim().toLowerCase() : 'donor',
       email_verified: true,
       email_verified_at: userData.email_verified_at || new Date().toISOString(),
       created_at: new Date().toISOString(),

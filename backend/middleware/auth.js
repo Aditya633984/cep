@@ -1,9 +1,10 @@
 const jwt = require('jsonwebtoken');
+const mockStore = require('../services/mockStore');
 
 /**
  * authenticate
  * Verifies the Bearer token in the Authorization header.
- * Attaches the decoded payload to req.user on success.
+ * Attaches the verified user payload and backend-checked role to req.user.
  * Returns 401 if token is missing, invalid, or expired.
  */
 const authenticate = (req, res, next) => {
@@ -21,7 +22,30 @@ const authenticate = (req, res, next) => {
   try {
     const secret = process.env.JWT_SECRET || 'foodbridge_demo_jwt_secret_key_2026';
     const decoded = jwt.verify(token, secret);
-    req.user = decoded; // { id, email, role, iat, exp }
+
+    // Verify against trusted backend data store if user exists
+    let resolvedRole = decoded.role ? String(decoded.role).trim().toLowerCase() : '';
+    let dbUser = null;
+    if (decoded.id) {
+      const userById = mockStore.findUserById(decoded.id);
+      if (userById && (!decoded.email || (userById.email && userById.email.toLowerCase() === decoded.email.toLowerCase()))) {
+        dbUser = userById;
+      } else if (decoded.email) {
+        dbUser = mockStore.findUserByEmail(decoded.email);
+      }
+    } else if (decoded.email) {
+      dbUser = mockStore.findUserByEmail(decoded.email);
+    }
+
+    if (dbUser && dbUser.role) {
+      resolvedRole = String(dbUser.role).trim().toLowerCase();
+    }
+
+    req.user = {
+      ...decoded,
+      ...(dbUser ? { id: dbUser.id, email: dbUser.email, name: dbUser.name } : {}),
+      role: resolvedRole,
+    };
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
@@ -36,18 +60,21 @@ const authenticate = (req, res, next) => {
  * Factory that returns a middleware enforcing role-based access.
  * Must be used AFTER authenticate.
  *
- * Usage:  router.get('/donor/dashboard', authenticate, authorize('donor'), handler)
+ * Normalizes roles to lowercase before comparison.
+ * Returns 401 if unauthenticated, 403 if authenticated but wrong role.
  */
 const authorize = (...roles) => {
+  const normalizedAllowedRoles = roles.map((r) => String(r).trim().toLowerCase());
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ success: false, error: 'Not authenticated.' });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRole = String(req.user.role || '').trim().toLowerCase();
+    if (!normalizedAllowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
-        error: `Access denied. This route requires one of: [${roles.join(', ')}].`,
+        error: `Access denied. This route requires one of: [${normalizedAllowedRoles.join(', ')}].`,
       });
     }
 

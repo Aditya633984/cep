@@ -20,7 +20,22 @@ export default function Login() {
   const [touched,      setTouched]      = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [serverError,  setServerError]  = useState('');
+  const [sessionNotice, setSessionNotice] = useState('');
   const [loading,      setLoading]      = useState(false);
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const isExpired = params.get('expired') === '1';
+      const storedNotice = sessionStorage.getItem('fb_session_expired');
+      if (isExpired || storedNotice) {
+        setSessionNotice(storedNotice || 'Your session has expired. Please log in again.');
+        sessionStorage.removeItem('fb_session_expired');
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
 
   const validateField = (name, value) => {
     switch (name) {
@@ -149,6 +164,22 @@ export default function Login() {
         {/* Card */}
         <div className="auth-card" role="main">
           <form onSubmit={handleSubmit} noValidate aria-label="Login form">
+
+            {/* Session Expiration Notice */}
+            {sessionNotice && (
+              <div
+                className="auth-error"
+                role="status"
+                style={{
+                  background: '#FFFBEB',
+                  borderColor: '#FCD34D',
+                  color: '#92400E',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                <span>⏰</span> {sessionNotice}
+              </div>
+            )}
 
             {/* Error Banner */}
             {serverError && (

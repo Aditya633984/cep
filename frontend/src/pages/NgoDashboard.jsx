@@ -450,10 +450,22 @@ function AvailablePanel({ onRefresh, onSmartMatch }) {
     setLoading(true); setError('');
     try {
       const data = await api.get('/ngo/donations/available' + buildQuery());
-      if (data.success) setDonations(data.donations);
-      else setError(data.error || 'Failed to load.');
-    } catch { setError('Could not connect.'); }
-    finally  { setLoading(false); }
+      if (data.success) {
+        setDonations(data.donations || []);
+      } else {
+        if (data.status === 403) {
+          setError(data.error || 'Access denied. This section requires an active NGO account.');
+        } else if (data.status === 401 || data.expired) {
+          setError('Session expired. Redirecting to login…');
+        } else {
+          setError(data.error || 'Failed to load available donations.');
+        }
+      }
+    } catch {
+      setError('Could not connect to server. Please check your internet connection.');
+    } finally {
+      setLoading(false);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(filters)]);
 
@@ -543,9 +555,38 @@ function AvailablePanel({ onRefresh, onSmartMatch }) {
         </button>
       </div>
 
-      {loading ? <div className="nd-loading">Loading donations…</div>
-        : error ? <div className="nd-error">{error}</div>
-        : donations.length === 0 ? (
+      {loading ? (
+        <div className="nd-loading">Loading donations…</div>
+      ) : error ? (
+        <div
+          className="nd-error-state"
+          style={{
+            background: 'var(--color-bg-card, #fff)',
+            border: '1px solid #FCA5A5',
+            borderRadius: '12px',
+            padding: '2rem 1.5rem',
+            textAlign: 'center',
+            margin: '1.5rem 0',
+          }}
+        >
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
+          <p style={{ color: '#DC2626', fontWeight: 600, fontSize: '1rem', margin: '0 0 0.5rem 0' }}>{error}</p>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0 0 1rem 0' }}>
+            {error.includes('expired')
+              ? 'Your authentication session has ended. Redirecting to login…'
+              : 'Please check your connection and try again.'}
+          </p>
+          {!error.includes('expired') && (
+            <button
+              className="btn btn-outline"
+              style={{ padding: '0.5rem 1.5rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+              onClick={() => fetchAvailable()}
+            >
+              <span>🔄</span> Retry
+            </button>
+          )}
+        </div>
+      ) : donations.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state__icon">🔍</div>
             <p className="empty-state__title">No donations found</p>

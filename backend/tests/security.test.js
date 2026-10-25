@@ -263,4 +263,95 @@ describe('Security & Defensive Hardening Suite', () => {
       expect(process.env.JWT_SECRET.length).toBeGreaterThanOrEqual(16);
     });
   });
+
+  describe('Role-Based Authorization & Session Handling', () => {
+    let ngoUser;
+    let volunteerUser;
+
+    beforeEach(async () => {
+      ngoUser = await createTestUser({ email: 'ngo_test@example.com', role: 'ngo' });
+      volunteerUser = await createTestUser({ email: 'vol_test@example.com', role: 'volunteer' });
+    });
+
+    test('allows NGO account to access Available Donations endpoint with 200 OK', async () => {
+      const res = await request(app)
+        .get('/api/ngo/donations/available')
+        .set('Authorization', `Bearer ${ngoUser.token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.donations)).toBe(true);
+    });
+
+    test('normalizes role casing (e.g. NGO or Ngo) so authorization succeeds', async () => {
+      const secret = process.env.JWT_SECRET || 'foodbridge_demo_jwt_secret_key_2026';
+      // Token signed with uppercase 'NGO'
+      const tokenUppercase = jwt.sign(
+        { id: ngoUser.id, email: ngoUser.email, role: 'NGO' },
+        secret,
+        { expiresIn: '1h' }
+      );
+
+      const res = await request(app)
+        .get('/api/ngo/donations/available')
+        .set('Authorization', `Bearer ${tokenUppercase}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    test('denies Donor from accessing NGO Available Donations endpoint with 403 Forbidden', async () => {
+      const res = await request(app)
+        .get('/api/ngo/donations/available')
+        .set('Authorization', `Bearer ${donor.token}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('Access denied. This route requires one of: [ngo].');
+    });
+
+    test('denies Volunteer from accessing NGO Available Donations endpoint with 403 Forbidden', async () => {
+      const res = await request(app)
+        .get('/api/ngo/donations/available')
+        .set('Authorization', `Bearer ${volunteerUser.token}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('Access denied. This route requires one of: [ngo].');
+    });
+
+    test('returns 401 Unauthorized for expired JWT on Available Donations endpoint', async () => {
+      const secret = process.env.JWT_SECRET || 'foodbridge_demo_jwt_secret_key_2026';
+      const expiredToken = jwt.sign(
+        { id: ngoUser.id, email: ngoUser.email, role: 'ngo' },
+        secret,
+        { expiresIn: '-1s' }
+      );
+
+      const res = await request(app)
+        .get('/api/ngo/donations/available')
+        .set('Authorization', `Bearer ${expiredToken}`);
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('Token expired. Please log in again.');
+    });
+
+    test('returns 401 Unauthorized when no token is provided', async () => {
+      const res = await request(app).get('/api/ngo/donations/available');
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('Access denied. No token provided.');
+    });
+
+    test('returns 401 Unauthorized for tampered/invalid token', async () => {
+      const res = await request(app)
+        .get('/api/ngo/donations/available')
+        .set('Authorization', 'Bearer invalid.tampered.token');
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('Invalid token.');
+    });
+  });
 });

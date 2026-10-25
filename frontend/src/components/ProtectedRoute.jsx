@@ -26,8 +26,11 @@ export default function ProtectedRoute({ children, role }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (role && user?.role !== role) {
-    const ownDash = ROLE_DASHBOARD[user?.role] || '/';
+  const userRole = user?.role ? String(user.role).trim().toLowerCase() : '';
+  const requiredRole = role ? String(role).trim().toLowerCase() : '';
+
+  if (requiredRole && userRole !== requiredRole) {
+    const ownDash = ROLE_DASHBOARD[userRole] || '/';
     return <Navigate to={ownDash} replace />;
   }
 

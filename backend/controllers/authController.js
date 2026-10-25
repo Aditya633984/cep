@@ -8,8 +8,9 @@ const mockStore = require('../services/mockStore');
 
 const signToken = (user) => {
   const secret = process.env.JWT_SECRET || 'foodbridge_demo_jwt_secret_key_2026';
+  const role = user.role ? String(user.role).trim().toLowerCase() : 'donor';
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role },
     secret,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
@@ -323,14 +324,15 @@ const login = async (req, res, next) => {
     }
 
     // ── Sign token & Return Safe User Object (No email verification gate) ──────
-    const token = signToken(user);
+    const normalizedRole = user.role ? String(user.role).trim().toLowerCase() : 'donor';
+    const token = signToken({ ...user, role: normalizedRole });
     const userObj = {
       id: user.id,
       name: user.name,
       username: user.username || user.name,
       email: user.email,
       phone: user.phone || null,
-      role: user.role,
+      role: normalizedRole,
       email_verified: true,
     };
 
@@ -367,6 +369,9 @@ const getMe = async (req, res, next) => {
     }
 
     const { password, ...safeUser } = user;
+    if (safeUser.role) {
+      safeUser.role = String(safeUser.role).trim().toLowerCase();
+    }
     return res.status(200).json({ success: true, user: safeUser });
   } catch (err) {
     next(err);
