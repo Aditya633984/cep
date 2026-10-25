@@ -1,5 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import DashboardTabs from './DashboardTabs';
+import RoleAccessDenied from './RoleAccessDenied';
 
 /**
  * ProtectedRoute
@@ -10,15 +12,9 @@ import { useAuth } from '../context/AuthContext';
  *
  * Behaviour:
  *   - Not authenticated → redirect to /login
- *   - Authenticated but wrong role → redirect to the user's own dashboard
+ *   - Admin → permitted on all role dashboards
+ *   - Authenticated with different role → displays DashboardTabs and clear RoleAccessDenied message
  */
-const ROLE_DASHBOARD = {
-  donor:     '/donor/dashboard',
-  ngo:       '/ngo/dashboard',
-  volunteer: '/volunteer/dashboard',
-  admin:     '/admin/dashboard',
-};
-
 export default function ProtectedRoute({ children, role }) {
   const { isAuthenticated, user } = useAuth();
 
@@ -29,9 +25,23 @@ export default function ProtectedRoute({ children, role }) {
   const userRole = user?.role ? String(user.role).trim().toLowerCase() : '';
   const requiredRole = role ? String(role).trim().toLowerCase() : '';
 
+  // Admins have access to all three dashboards according to existing permissions
+  if (userRole === 'admin') {
+    return children;
+  }
+
+  // If role is required and user does not have permission, show clear access-denied view with tabs
   if (requiredRole && userRole !== requiredRole) {
-    const ownDash = ROLE_DASHBOARD[userRole] || '/';
-    return <Navigate to={ownDash} replace />;
+    return (
+      <main className="dashboard-page">
+        <DashboardTabs activeRole={requiredRole} />
+        <RoleAccessDenied
+          requiredRole={requiredRole}
+          userRole={userRole}
+          user={user}
+        />
+      </main>
+    );
   }
 
   return children;

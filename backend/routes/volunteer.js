@@ -16,7 +16,7 @@ const volunteerOnly = [authenticate, authorize('volunteer')];
 const adminOnly     = [authenticate, authorize('admin')];
 
 // ─── Volunteer Dashboard ───────────────────────────────────────────────────────
-router.get('/volunteer/dashboard', ...volunteerOnly, getVolunteerDashboard);
+router.get('/volunteer/dashboard', authenticate, authorize('volunteer', 'admin'), getVolunteerDashboard);
 
 // ─── Volunteer Profile ─────────────────────────────────────────────────────────
 router.get('/volunteer/profile', ...volunteerOnly, getVolunteerProfile);

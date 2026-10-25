@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute   from './components/ProtectedRoute';
 
 import Navbar   from './components/Navbar';
@@ -18,6 +18,19 @@ import VolunteerDashboard from './pages/VolunteerDashboard';
 import AdminDashboard    from './pages/AdminDashboard';
 
 import './styles/index.css';
+
+// Automatically routes to authenticated user's assigned dashboard
+function DashboardRedirect() {
+  const { user } = useAuth();
+  const role = user?.role ? String(user.role).trim().toLowerCase() : 'donor';
+  const ROLE_DASHBOARD = {
+    donor: '/donor/dashboard',
+    ngo: '/ngo/dashboard',
+    volunteer: '/volunteer/dashboard',
+    admin: '/admin/dashboard',
+  };
+  return <Navigate to={ROLE_DASHBOARD[role] || '/'} replace />;
+}
 
 // Hides Navbar/Footer on full-page dashboard routes (admin)
 function AppShell({ children }) {
@@ -45,6 +58,16 @@ export default function App() {
             <Route path="/login"        element={<Login />}       />
             <Route path="/register"     element={<Register />}    />
             <Route path="/verify-email" element={<Navigate to="/login" replace />} />
+
+            {/* ── Default Dashboard Route ────────────────────────── */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardRedirect />
+                </ProtectedRoute>
+              }
+            />
 
             {/* ── Protected Dashboard Routes ─────────────────────── */}
             <Route

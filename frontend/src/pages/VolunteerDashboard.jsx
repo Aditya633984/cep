@@ -15,6 +15,7 @@ import LocationPicker from '../components/LocationPicker';
 import LocationMap from '../components/LocationMap';
 
 import { api, BACKEND_URL } from '../utils/api';
+import DashboardTabs from '../components/DashboardTabs';
 
 const VEHICLE_LABELS = {
   bicycle: '🚲 Bicycle',
@@ -503,6 +504,7 @@ export default function VolunteerDashboard() {
   // ── Render ──────────────────────────────────────────────────
   return (
     <main id="volunteer-dashboard" className="dashboard-page">
+      <DashboardTabs activeRole="volunteer" />
       <div className="dashboard-layout">
 
         {/* ── Sidebar ───────────────────────────────── */}

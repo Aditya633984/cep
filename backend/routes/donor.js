@@ -15,7 +15,7 @@ const donorOnly = [authenticate, authorize('donor')];
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 // GET /api/donor/dashboard  (overrides the basic one in dashboard.js)
-router.get('/donor/dashboard', ...donorOnly, getDonorDashboard);
+router.get('/donor/dashboard', authenticate, authorize('donor', 'admin'), getDonorDashboard);
 
 // ─── Donations CRUD ───────────────────────────────────────────────────────────
 // POST   /api/donor/donations          – create

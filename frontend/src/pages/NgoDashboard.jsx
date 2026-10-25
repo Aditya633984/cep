@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api, BACKEND_URL } from '../utils/api';
+import DashboardTabs from '../components/DashboardTabs';
 import DonationStatusBadge from '../components/DonationStatusBadge';
 import SmartMatchPanel from '../components/SmartMatchPanel';
 import LocationPicker from '../components/LocationPicker';
@@ -80,6 +81,7 @@ export default function NgoDashboard() {
 
   return (
     <main id="ngo-dashboard" className="dashboard-page">
+      <DashboardTabs activeRole="ngo" />
       <div className="dashboard-layout">
 
         {/* ── Sidebar ─────────────────────────────────────────── */}

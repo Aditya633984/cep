@@ -1,0 +1,178 @@
+/* ============================================================
+   FoodBridge – Dashboard Role Tabs
+   Blue-and-White Design System
+   ============================================================ */
+
+.dashboard-tabs-container {
+  max-width: 1100px;
+  margin: 0 auto var(--space-6, 1.5rem) auto;
+  background: #FFFFFF;
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: var(--radius-xl, 1rem);
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.dashboard-tabs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.875rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.dashboard-tabs-title {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary, #2563EB);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dashboard-tabs-title-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-primary, #2563EB);
+  display: inline-block;
+}
+
+.dashboard-tabs-role-indicator {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary, #475569);
+}
+
+.dashboard-tabs-role-indicator strong {
+  color: var(--color-text-primary, #1E293B);
+}
+
+.dashboard-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.dashboard-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #F8FAFC;
+  border: 1.5px solid var(--color-border, #E2E8F0);
+  border-radius: 0.75rem;
+  color: var(--color-text-primary, #1E293B);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  min-height: 60px;
+}
+
+.dashboard-tab:hover {
+  background: var(--color-primary-light, #EFF6FF);
+  border-color: #BFDBFE;
+  transform: translateY(-1px);
+}
+
+.dashboard-tab:focus-visible {
+  outline: 2px solid var(--color-primary, #2563EB);
+  outline-offset: 2px;
+}
+
+.dashboard-tab--active {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+  border-color: #1D4ED8 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.dashboard-tab--active .dashboard-tab__label {
+  color: #FFFFFF !important;
+}
+
+.dashboard-tab--active .dashboard-tab__sub {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dashboard-tab__icon {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard-tab__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard-tab__label {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: 700;
+  color: var(--color-text-primary, #1E293B);
+  line-height: 1.2;
+}
+
+.dashboard-tab__sub {
+  font-size: 0.72rem;
+  color: var(--color-text-muted, #94A3B8);
+  margin-top: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-tab__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #E2E8F0;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.dashboard-tab--active .dashboard-tab__badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+.dashboard-tab__badge--admin {
+  background: #F3E8FF;
+  color: #7E22CE;
+}
+
+.dashboard-tab--active .dashboard-tab__badge--admin {
+  background: rgba(255, 255, 255, 0.3);
+  color: #FFFFFF;
+}
+
+@media (max-width: 768px) {
+  .dashboard-tabs {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .dashboard-tabs-container {
+    padding: 0.875rem;
+    margin-bottom: var(--space-4, 1rem);
+  }
+  .dashboard-tab {
+    padding: 0.625rem 0.875rem;
+    min-height: 50px;
+  }
+  .dashboard-tab__sub {
+    display: none;
+  }
+}

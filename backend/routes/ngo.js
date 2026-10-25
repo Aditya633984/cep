@@ -22,7 +22,7 @@ const adminOnly = [authenticate, authorize('admin')];
 
 // ─── NGO Dashboard ────────────────────────────────────────────────────────────
 // GET /api/ngo/dashboard   (overrides the stub in dashboard.js)
-router.get('/ngo/dashboard', ...ngoOnly, getNgoDashboard);
+router.get('/ngo/dashboard', authenticate, authorize('ngo', 'admin'), getNgoDashboard);
 
 // ─── NGO Profile ──────────────────────────────────────────────────────────────
 // GET   /api/ngo/profile
