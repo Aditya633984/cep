@@ -58,19 +58,25 @@ export default function Register() {
   const validateField = (name, value, allData) => {
     switch (name) {
       case 'fullName': {
-        if (!value || typeof value !== 'string' || !value.trim()) {
-          return 'Full name is required.';
+        const trimmed = (value || '').trim();
+        if (!trimmed) {
+          return 'Full Name can contain only English letters and spaces.';
+        }
+        const nameRegex = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+        if (!nameRegex.test(trimmed)) {
+          return 'Full Name can contain only English letters and spaces.';
         }
         return '';
       }
 
       case 'username': {
-        if (!value || typeof value !== 'string' || !value.trim()) {
-          return 'Username must contain only alphabet letters. Numbers, spaces and special characters are not allowed.';
+        const trimmed = (value || '').trim();
+        if (!trimmed) {
+          return 'Username can contain only English letters and spaces.';
         }
-        const usernameRegex = /^[A-Za-z]+$/;
-        if (!usernameRegex.test(value)) {
-          return 'Username must contain only alphabet letters. Numbers, spaces and special characters are not allowed.';
+        const usernameRegex = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+        if (!usernameRegex.test(trimmed)) {
+          return 'Username can contain only English letters and spaces.';
         }
         return '';
       }
@@ -148,10 +154,14 @@ export default function Register() {
 
     if (serverError) setServerError('');
 
-    // If already touched, re-validate on change and remove error as soon as it becomes valid
-    if (touched[name]) {
+    // Re-validate on change so feedback is immediate, especially for fullName and username
+    if (touched[name] || name === 'fullName' || name === 'username') {
       const fieldErr = validateField(name, fieldValue, updatedForm);
-      setErrors((prev) => ({ ...prev, [name]: fieldErr }));
+      if (touched[name] || (fieldValue && fieldErr)) {
+        setErrors((prev) => ({ ...prev, [name]: fieldErr }));
+      } else if (!fieldErr) {
+        setErrors((prev) => ({ ...prev, [name]: '' }));
+      }
     }
 
     // If password changed, update confirmPassword error if confirmPassword was touched
@@ -204,6 +214,7 @@ export default function Register() {
 
     // Mark all required fields as touched
     const allTouched = {
+      fullName: true,
       username: true,
       email: true,
       phone: true,
@@ -403,8 +414,10 @@ export default function Register() {
                 autoComplete="name"
                 required
               />
-              {errors.fullName && (
+              {errors.fullName ? (
                 <span className="field-error" role="alert">{errors.fullName}</span>
+              ) : (
+                <p className="form-hint">English alphabet letters and spaces only (A–Z, a–z).</p>
               )}
             </div>
 
@@ -426,7 +439,7 @@ export default function Register() {
               {errors.username ? (
                 <span className="field-error" role="alert">{errors.username}</span>
               ) : (
-                <p className="form-hint">English alphabet letters only (A–Z, a–z). No numbers or spaces.</p>
+                <p className="form-hint">English alphabet letters and spaces only (A–Z, a–z).</p>
               )}
             </div>
 

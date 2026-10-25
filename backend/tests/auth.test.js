@@ -10,17 +10,18 @@ describe('Authentication & Authorization Suite', () => {
   });
 
   describe('Registration & Input Validation Requirements (14 Test Cases)', () => {
-    // ── Case 1: Alphabet-only username is accepted ───────────────────────────
-    test('1. Alphabet-only username is accepted', async () => {
-      const validUsernames = ['Aditya', 'Rahul', 'FoodBridge'];
+    // ── Case 1: Valid usernames with English letters and spaces are accepted ──
+    test('1. Valid usernames with English letters and spaces are accepted', async () => {
+      const validUsernames = ['Aditya', 'Aditya Lokhande', 'Rahul Kumar'];
       let phoneNum = 9876543210;
 
       for (const username of validUsernames) {
+        const emailSafe = username.trim().toLowerCase().replace(/\s+/g, '.');
         const res = await request(app)
           .post('/api/auth/register')
           .send({
             username,
-            email: `${username.toLowerCase()}@gmail.com`,
+            email: `${emailSafe}@gmail.com`,
             phone: String(phoneNum++),
             password: 'securepassword123',
             confirmPassword: 'securepassword123',
@@ -30,15 +31,30 @@ describe('Authentication & Authorization Suite', () => {
         expect(res.status).toBe(201);
         expect(res.body.success).toBe(true);
         expect(res.body.token).toBeDefined();
-        expect(res.body.user.name).toBe(username);
+        expect(res.body.user.username).toBe(username.trim());
+        expect(res.body.user.name).toBe(username.trim());
       }
+
+      // Also verify leading and trailing spaces are trimmed before saving
+      const resTrim = await request(app)
+        .post('/api/auth/register')
+        .send({
+          username: '  Suresh Raina  ',
+          email: 'sureshraina@gmail.com',
+          phone: String(phoneNum++),
+          password: 'securepassword123',
+          confirmPassword: 'securepassword123',
+          role: 'donor',
+        });
+      expect(resTrim.status).toBe(201);
+      expect(resTrim.body.user.username).toBe('Suresh Raina');
     });
 
-    // ── Case 2: Username containing numbers is rejected ─────────────────────
-    test('2. Username containing numbers is rejected', async () => {
-      const invalidWithNumbers = ['Aditya123', 'Rahul99', '12345'];
+    // ── Case 2: Username containing numbers or special characters is rejected ─
+    test('2. Username containing numbers or special characters is rejected', async () => {
+      const invalidWithNumbersOrSpecial = ['Aditya123', 'Aditya@', '12345'];
 
-      for (const username of invalidWithNumbers) {
+      for (const username of invalidWithNumbersOrSpecial) {
         const res = await request(app)
           .post('/api/auth/register')
           .send({
@@ -52,16 +68,16 @@ describe('Authentication & Authorization Suite', () => {
         expect(res.status).toBe(400);
         expect(res.body.success).toBe(false);
         expect(res.body.error).toBe(
-          'Username must contain only alphabet letters. Numbers, spaces and special characters are not allowed.'
+          'Username can contain only English letters and spaces.'
         );
       }
     });
 
-    // ── Case 3: Username containing spaces is rejected ──────────────────────
-    test('3. Username containing spaces is rejected', async () => {
-      const invalidWithSpaces = ['Rahul Sharma', ' Aditya', 'Food Bridge ', 'Jane Donor'];
+    // ── Case 3: Username containing only spaces is rejected ──────────────────
+    test('3. Username containing only spaces is rejected', async () => {
+      const invalidSpacesOnly = ['   ', ' ', '      '];
 
-      for (const username of invalidWithSpaces) {
+      for (const username of invalidSpacesOnly) {
         const res = await request(app)
           .post('/api/auth/register')
           .send({
@@ -75,7 +91,70 @@ describe('Authentication & Authorization Suite', () => {
         expect(res.status).toBe(400);
         expect(res.body.success).toBe(false);
         expect(res.body.error).toBe(
-          'Username must contain only alphabet letters. Numbers, spaces and special characters are not allowed.'
+          'Username can contain only English letters and spaces.'
+        );
+      }
+    });
+
+    // ── Case 3b: Full Name accepts English letters and spaces, trims, and rejects invalid inputs ──
+    test('3b. Full Name validation accepts English letters and spaces and rejects invalid inputs', async () => {
+      let phoneNum = 9811223344;
+
+      // Valid full names
+      const validFullNames = ['Aditya', 'Aditya Lokhande', 'Rahul Kumar Sharma'];
+      for (const fullName of validFullNames) {
+        const cleanSafe = fullName.toLowerCase().replace(/\s+/g, '');
+        const res = await request(app)
+          .post('/api/auth/register')
+          .send({
+            fullName,
+            username: `user${cleanSafe}`,
+            email: `${cleanSafe}@gmail.com`,
+            phone: String(phoneNum++),
+            password: 'securepassword123',
+            confirmPassword: 'securepassword123',
+            role: 'donor',
+          });
+
+        expect(res.status).toBe(201);
+        expect(res.body.success).toBe(true);
+        expect(res.body.user.name).toBe(fullName.trim());
+      }
+
+      // Trimming leading and trailing spaces
+      const resTrim = await request(app)
+        .post('/api/auth/register')
+        .send({
+          fullName: '  Aditya Lokhande  ',
+          username: 'adityatrimmeduser',
+          email: 'adityatrimmed@gmail.com',
+          phone: String(phoneNum++),
+          password: 'securepassword123',
+          confirmPassword: 'securepassword123',
+          role: 'donor',
+        });
+      expect(resTrim.status).toBe(201);
+      expect(resTrim.body.user.name).toBe('Aditya Lokhande');
+
+      // Invalid full names: numbers, special chars, digits only, spaces only
+      const invalidFullNames = ['Aditya123', 'Aditya@', '12345', '   '];
+      for (const fullName of invalidFullNames) {
+        const res = await request(app)
+          .post('/api/auth/register')
+          .send({
+            fullName,
+            username: 'validusername',
+            email: 'testname@gmail.com',
+            phone: '9876543210',
+            password: 'securepassword123',
+            confirmPassword: 'securepassword123',
+            role: 'donor',
+          });
+
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
+        expect(res.body.error).toBe(
+          'Full Name can contain only English letters and spaces.'
         );
       }
     });
@@ -330,7 +409,7 @@ describe('Authentication & Authorization Suite', () => {
           role: 'donor',
         });
       expect(resNoUsername.status).toBe(400);
-      expect(resNoUsername.body.error).toMatch(/Username must contain only alphabet letters/i);
+      expect(resNoUsername.body.error).toMatch(/Username can contain only English letters and spaces/i);
 
       // 13b. Username with special characters
       const resSpecialChar = await request(app)
@@ -343,7 +422,7 @@ describe('Authentication & Authorization Suite', () => {
           role: 'donor',
         });
       expect(resSpecialChar.status).toBe(400);
-      expect(resSpecialChar.body.error).toMatch(/Username must contain only alphabet letters/i);
+      expect(resSpecialChar.body.error).toMatch(/Username can contain only English letters and spaces/i);
 
       // 13c. Missing phone
       const resNoPhone = await request(app)

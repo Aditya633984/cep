@@ -62,29 +62,56 @@ const register = async (req, res, next) => {
       });
     }
 
-    // ── 2. Username Validation ────────────────────────────────────────────────
+    // ── 2. Full Name Validation ───────────────────────────────────────────────
+    let cleanFullName = '';
+    const rawFullName = fullName !== undefined ? fullName : (name !== undefined && username !== undefined ? name : undefined);
+    if (rawFullName !== undefined) {
+      if (
+        rawFullName === null ||
+        typeof rawFullName !== 'string'
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: 'Full Name can contain only English letters and spaces.',
+        });
+      }
+
+      const trimmedFullName = rawFullName.trim();
+      const fullNameRegex = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+      if (!trimmedFullName || !fullNameRegex.test(trimmedFullName)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Full Name can contain only English letters and spaces.',
+        });
+      }
+      cleanFullName = trimmedFullName;
+    }
+
+    // ── 3. Username Validation ────────────────────────────────────────────────
     const rawUsername = username !== undefined ? username : name;
     if (
       rawUsername === undefined ||
       rawUsername === null ||
-      typeof rawUsername !== 'string' ||
-      rawUsername.length === 0
+      typeof rawUsername !== 'string'
     ) {
       return res.status(400).json({
         success: false,
-        error: 'Username must contain only alphabet letters. Numbers, spaces and special characters are not allowed.',
+        error: 'Username can contain only English letters and spaces.',
       });
     }
 
-    const usernameRegex = /^[A-Za-z]+$/;
-    if (!usernameRegex.test(rawUsername)) {
+    const cleanUsername = rawUsername.trim();
+    const usernameRegex = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+    if (!cleanUsername || !usernameRegex.test(cleanUsername)) {
       return res.status(400).json({
         success: false,
-        error: 'Username must contain only alphabet letters. Numbers, spaces and special characters are not allowed.',
+        error: 'Username can contain only English letters and spaces.',
       });
     }
-    const cleanUsername = rawUsername;
-    const cleanFullName = String(fullName || name || cleanUsername).trim();
+
+    if (!cleanFullName) {
+      cleanFullName = cleanUsername;
+    }
 
     // ── 3. Phone Number Validation ────────────────────────────────────────────
     if (
