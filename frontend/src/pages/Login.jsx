@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BASE_URL } from '../utils/api';
 import '../styles/Auth.css';
@@ -14,6 +14,7 @@ const ROLE_DASHBOARD = {
 export default function Login() {
   const { login } = useAuth();
   const navigate  = useNavigate();
+  const location  = useLocation();
 
   const [formData,     setFormData]     = useState({ email: '', password: '' });
   const [errors,       setErrors]       = useState({});
@@ -21,21 +22,42 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [serverError,  setServerError]  = useState('');
   const [sessionNotice, setSessionNotice] = useState('');
+  const [successNotice, setSuccessNotice] = useState('');
   const [loading,      setLoading]      = useState(false);
 
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const isExpired = params.get('expired') === '1';
-      const storedNotice = sessionStorage.getItem('fb_session_expired');
-      if (isExpired || storedNotice) {
-        setSessionNotice(storedNotice || 'Your session has expired. Please log in again.');
+      const storedExpiredNotice = sessionStorage.getItem('fb_session_expired');
+      if (isExpired || storedExpiredNotice) {
+        setSessionNotice(storedExpiredNotice || 'Your session has expired. Please log in again.');
         sessionStorage.removeItem('fb_session_expired');
+      }
+
+      // Check for registration success message (via router state, sessionStorage, or URL query)
+      const isRegistered = params.get('registered') === '1';
+      const stateSuccess = location.state?.successMessage;
+      const storedSuccess = sessionStorage.getItem('fb_registration_success');
+      if (stateSuccess || storedSuccess || isRegistered) {
+        setSuccessNotice(
+          stateSuccess ||
+          storedSuccess ||
+          'Registration successful! Please log in with your credentials.'
+        );
+        sessionStorage.removeItem('fb_registration_success');
+      }
+
+      // Pre-fill email from registration if available
+      const registeredEmail = location.state?.registeredEmail || sessionStorage.getItem('fb_registered_email');
+      if (registeredEmail) {
+        setFormData((prev) => ({ ...prev, email: registeredEmail }));
+        sessionStorage.removeItem('fb_registered_email');
       }
     } catch {
       // Ignore storage errors
     }
-  }, []);
+  }, [location]);
 
   const validateField = (name, value) => {
     switch (name) {
@@ -165,6 +187,22 @@ export default function Login() {
         <div className="auth-card" role="main">
           <form onSubmit={handleSubmit} noValidate aria-label="Login form">
 
+            {/* Registration Success Notice */}
+            {successNotice && (
+              <div
+                className="auth-success"
+                role="status"
+                style={{
+                  background: '#F0FDF4',
+                  borderColor: '#86EFAC',
+                  color: '#166534',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                <span>✅</span> {successNotice}
+              </div>
+            )}
+
             {/* Session Expiration Notice */}
             {sessionNotice && (
               <div
@@ -237,23 +275,7 @@ export default function Login() {
               )}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '-0.5rem', marginBottom: '1.25rem' }}>
-              <button
-                type="button"
-                onClick={() => setIsPendingVerification((p) => !p)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  fontSize: 'var(--font-size-xs)',
-                  color: 'var(--color-primary)',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                }}
-              >
-                {isPendingVerification ? 'Hide verification help' : 'Resend verification email?'}
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '-0.5rem', marginBottom: '1.25rem' }}>
               <a href="#" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
                 Forgot password?
               </a>

@@ -254,7 +254,7 @@ const register = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Registration successful! Welcome to FoodBridge.',
+      message: 'Registration successful! Please log in with your credentials.',
       token,
       user: safeUser,
     });

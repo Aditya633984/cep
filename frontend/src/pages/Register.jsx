@@ -23,7 +23,6 @@ const FOOD_TYPE_OPTIONS = [
 ];
 
 export default function Register() {
-  const { login }  = useAuth();
   const navigate   = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -319,14 +318,30 @@ export default function Register() {
         return;
       }
 
-      setSuccessMsg('Registration successful! Welcome to FoodBridge. Redirecting to your dashboard…');
-      setTimeout(() => {
-        if (data.token && data.user) {
-          login(data.token, data.user);
-          navigate(ROLE_DASHBOARD[data.user.role] || '/', { replace: true });
-        } else {
-          navigate('/login', { replace: true });
+      const successMessage = 'Registration successful! Please log in with your credentials.';
+      setSuccessMsg(successMessage);
+
+      // Ensure user is not auto-logged in and any stale auth state is cleared
+      try {
+        localStorage.removeItem('fb_token');
+        localStorage.removeItem('fb_user');
+        sessionStorage.setItem('fb_registration_success', successMessage);
+        if (payload.email) {
+          sessionStorage.setItem('fb_registered_email', payload.email);
         }
+      } catch {
+        // Ignore storage errors
+      }
+
+      // Redirect to the Login page
+      setTimeout(() => {
+        navigate('/login?registered=1', {
+          replace: true,
+          state: {
+            registeredEmail: payload.email,
+            successMessage,
+          },
+        });
       }, 1000);
     } catch (err) {
       console.error('[Register] Network request failed:', err);
